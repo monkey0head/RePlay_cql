@@ -51,6 +51,13 @@ class ALSWrap(Recommender, ItemVectorModel):
         self.model.itemFactors.cache()
         self.model.userFactors.cache()
 
+    def _trigger_fit_execution(self):
+        """
+        Call count on self._dataframes to trigger immediate fit stage execution
+        """
+        self.model.itemFactors.count()
+        self.model.userFactors.count()
+
     def _fit(
         self,
         log: DataFrame,
