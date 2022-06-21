@@ -344,6 +344,14 @@ class BaseRecommender(ABC):
             self.fit_items.agg({"item_idx": "max"}).collect()[0][0] + 1
         )
         self._fit(log, user_features, item_features)
+        self._trigger_fit_execution()
+
+    def _trigger_fit_execution(self):
+        """
+        Call count on self._dataframes to trigger immediate fit stage execution
+        """
+        for df in self._dataframes.values():
+            df.count()
 
     @abstractmethod
     def _fit(
