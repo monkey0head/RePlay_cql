@@ -22,7 +22,7 @@ build-job:
     - pip install --upgrade pip wheel poetry
     - source ./venv/bin/activate
     - printf "yes" | poetry cache clear pypi --all
-    - poetry update
+#    - poetry update
     - poetry install
     - echo "Build complete"
 

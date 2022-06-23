@@ -169,7 +169,7 @@ class Word2VecRec(Recommender, ItemVectorModel):
     ) -> DataFrame:
         if log is None:
             raise ValueError(
-                f"log is not provided, {self.__str__()} predict requires log."
+                f"log is not provided, {self} predict requires log."
             )
 
         user_vectors = self._get_user_vectors(
