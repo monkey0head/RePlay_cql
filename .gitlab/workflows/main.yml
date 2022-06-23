@@ -21,8 +21,13 @@ stages:          # List of stages for jobs, and their order of execution
 build-job:       # This job runs in the build stage, which runs first.
   stage: build
   script:
-    - echo "Compiling the code... updated"
-    - echo "Compile complete."
+    - python -m venv venv
+    - source ./venv/bin/activate
+    - pip install --upgrade pip wheel poetry
+    - poetry cache clear pypi --all
+    - poetry update
+    - poetry install
+    - echo "Build complete."
 
 unit-test-job:   # This job runs in the test stage.
   stage: test    # It only starts when the job in the build stage completes successfully.
