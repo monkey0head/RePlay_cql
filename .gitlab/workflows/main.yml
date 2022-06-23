@@ -21,7 +21,7 @@ stages:          # List of stages for jobs, and their order of execution
 build-job:       # This job runs in the build stage, which runs first.
   stage: build
   script:
-    - python -m venv venv
+    - python3 -m venv venv
     - source ./venv/bin/activate
     - pip install --upgrade pip wheel poetry
     - poetry cache clear pypi --all
