@@ -1,27 +1,30 @@
 cache:
   paths:
-    - venv/
+    - ./venv/
 
 stages:
-  - preliminary
+  - build
   - code_quality
   - docs
-  - build
   - test
   - deploy
 
-preliminary-job:
-  stage: preliminary
+build-job:
+  stage: build
   script:
     - python3 --version
     - python3 -m venv venv
     - source ./venv/bin/activate
     - pip install --upgrade pip wheel poetry
+    - source ./venv/bin/activate
+    - poetry cache clear pypi --all
+    - poetry update
+    - poetry install
+    - echo "Build complete"
 
 pylint-job:
   stage: code_quality
   script:
-    - pip -V
     - source ./venv/bin/activate
     - pip -V
     - pip install --upgrade pylint
@@ -41,15 +44,6 @@ sphinx-job:
     - pip install --upgrade sphinx
     - cd docs
     - make clean html
-
-build-job:
-  stage: build
-  script:
-    - source ./venv/bin/activate
-    - poetry cache clear pypi --all
-    - poetry update
-    - poetry install
-    - echo "Build complete"
 
 test-job:
   stage: test
