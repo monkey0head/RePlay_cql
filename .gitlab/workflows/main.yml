@@ -1,9 +1,9 @@
 #variables:
 #  FF_ENABLE_JOB_CLEANUP: 1
 
-#cache:
-#  paths:
-#    - ./venv/
+cache:
+  paths:
+    - ./venv/
 
 stages:
   - build
