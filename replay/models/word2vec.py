@@ -77,14 +77,13 @@ class Word2VecRec(Recommender, ItemVectorModel):
         self.idf = (
             log.groupBy("item_idx")
             .agg(sf.countDistinct("user_idx").alias("count"))
-            .select(
-                "item_idx",
-                (
-                    sf.log(sf.lit(self.users_count) / sf.col("count"))
-                    if self.use_idf
-                    else sf.lit(1.0)
-                ).alias("idf"),
+            .withColumn(
+                "idf",
+                sf.log(sf.lit(self.users_count) / sf.col("count"))
+                if self.use_idf
+                else sf.lit(1.0),
             )
+            .select("item_idx", "idf")
         )
         self.idf.cache()
 

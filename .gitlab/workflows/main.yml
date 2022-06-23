@@ -20,7 +20,6 @@ build-job:
     - python3 -m venv venv
     - source ./venv/bin/activate
     - pip install --upgrade pip wheel poetry
-    - source ./venv/bin/activate
     - printf "yes" | poetry cache clear pypi --all
 #    - poetry update
     - poetry install
