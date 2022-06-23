@@ -21,7 +21,7 @@ build-job:
     - source ./venv/bin/activate
     - pip install --upgrade pip wheel poetry
     - source ./venv/bin/activate
-#    - yes | poetry cache clear pypi --all
+    - printf "yes" | poetry cache clear pypi --all
     - poetry update
     - poetry install
     - echo "Build complete"
