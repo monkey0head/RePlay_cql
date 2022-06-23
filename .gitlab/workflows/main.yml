@@ -1,13 +1,16 @@
-cache:
-  paths:
-    - ./venv/
+variables:
+  FF_ENABLE_JOB_CLEANUP: 1
+
+#cache:
+#  paths:
+#    - ./venv/
 
 stages:
   - build
   - code_quality
   - docs
   - test
-  - deploy
+  - cleanup
 
 build-job:
   stage: build
@@ -50,3 +53,10 @@ test-job:
   script:
     - source ./venv/bin/activate
     - pytest --cov=replay --cov-report=term-missing --doctest-modules replay --cov-fail-under=93 tests
+
+#cleanup_job:
+#  stage: cleanup
+#  script:
+#    - echo "Cleaning up"
+#    - rm -rf "%CACHE_PATH%/%CI_PIPELINE_ID%"
+#  when: always
