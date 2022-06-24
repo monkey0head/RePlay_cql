@@ -28,22 +28,18 @@ pylint-job:
   stage: code_quality
   script:
     - source ./venv/bin/activate
-    - pip -V
-    - pip install --upgrade pylint
     - pylint --rcfile=.pylintrc replay
 
 pycodestyle-job:
   stage: code_quality
   script:
     - source ./venv/bin/activate
-    - pip install --upgrade pycodestyle
     - pycodestyle --ignore=E203,E231,E501,W503,W605 --max-doc-length=160 replay tests
 
 sphinx-job:
   stage: docs
   script:
     - source ./venv/bin/activate
-    - pip install --upgrade sphinx
     - cd docs
     - make clean html
 
