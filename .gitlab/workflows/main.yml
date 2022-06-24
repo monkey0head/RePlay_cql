@@ -1,5 +1,6 @@
-#variables:
-#  FF_ENABLE_JOB_CLEANUP: 1
+workflow:
+  rules:
+    - if: $CI_PIPELINE_SOURCE == 'merge_request_event'
 
 cache:
   paths:
