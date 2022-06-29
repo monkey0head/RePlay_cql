@@ -9,7 +9,6 @@ from pyspark.sql import functions as sf
 
 from replay.constants import REC_SCHEMA
 from replay.models.base_rec import Recommender
-from replay.utils import cache_count
 
 
 class RandomRec(Recommender):

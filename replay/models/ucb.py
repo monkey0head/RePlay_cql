@@ -6,7 +6,6 @@ from pyspark.sql import DataFrame, Window
 from pyspark.sql import functions as sf
 
 from replay.models.base_rec import Recommender
-from replay.utils import cache_count
 
 
 class UCB(Recommender):

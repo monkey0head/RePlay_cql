@@ -9,7 +9,6 @@ from sklearn.linear_model import ElasticNet
 
 from replay.models.base_rec import NeighbourRec
 from replay.session_handler import State
-from replay.utils import cache_count
 
 
 class SLIM(NeighbourRec):
