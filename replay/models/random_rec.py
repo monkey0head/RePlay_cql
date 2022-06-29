@@ -202,7 +202,7 @@ class RandomRec(Recommender):
                 .withColumn("probability", sf.lit(1.0))
             )
 
-        cache_count(self.item_popularity)
+        self.item_popularity.cache().count()
         self.fill = (
             self.item_popularity.agg({"probability": "min"}).first()[0]
             if self.add_cold

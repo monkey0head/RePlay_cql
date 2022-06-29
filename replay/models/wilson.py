@@ -5,7 +5,6 @@ from pyspark.sql import functions as sf
 from scipy.stats import norm
 
 from replay.models.pop_rec import PopRec
-from replay.utils import cache_count
 
 
 class Wilson(PopRec):
@@ -75,4 +74,4 @@ class Wilson(PopRec):
         )
 
         self.item_popularity = items_counts.drop("pos", "total")
-        cache_count(self.item_popularity)
+        self.item_popularity.cache().count()

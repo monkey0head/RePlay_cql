@@ -499,15 +499,6 @@ def cache_if_exists(dataframe: Optional[DataFrame]) -> Optional[DataFrame]:
     return dataframe
 
 
-def cache_count(dataframe: DataFrame) -> None:
-    """
-    Cache a DataFrame and call immediate computation with .count()
-    :param dataframe: Spark DataFrame
-    """
-    dataframe.cache()
-    dataframe.count()
-
-
 def unpersist_if_exists(dataframe: Optional[DataFrame]) -> None:
     """
     :param dataframe: DataFrame or None

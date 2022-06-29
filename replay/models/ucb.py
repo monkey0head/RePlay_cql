@@ -83,7 +83,7 @@ class UCB(Recommender):
         )
 
         self.item_popularity = items_counts.drop("pos", "total")
-        cache_count(self.item_popularity)
+        self.item_popularity.cache().count()
 
         self.fill = 1 + math.sqrt(math.log(self.coef * full_count))
 

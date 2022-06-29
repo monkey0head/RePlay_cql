@@ -7,7 +7,7 @@ from pyspark.sql import DataFrame
 from pyspark.sql.window import Window
 
 from replay.models.base_rec import Recommender
-from replay.utils import cache_count, unpersist_if_exists
+from replay.utils import unpersist_if_exists
 
 
 class AssociationRulesItemRec(Recommender):
@@ -197,7 +197,7 @@ class AssociationRulesItemRec(Recommender):
             "lift",
             "confidence_gain",
         )
-        cache_count(self.pair_metrics)
+        self.pair_metrics.cache().count()
         frequent_items_cached.unpersist()
 
     # pylint: disable=too-many-arguments

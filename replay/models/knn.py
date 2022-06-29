@@ -6,7 +6,6 @@ from pyspark.sql.window import Window
 
 from replay.models.base_rec import NeighbourRec
 from replay.optuna_objective import KNNObjective
-from replay.utils import cache_count
 
 
 class KNN(NeighbourRec):
@@ -142,4 +141,4 @@ class KNN(NeighbourRec):
 
         similarity_matrix = self._get_similarity(df)
         self.similarity = self._get_k_most_similar(similarity_matrix)
-        cache_count(self.similarity)
+        self.similarity.cache().count()
