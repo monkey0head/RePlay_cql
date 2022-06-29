@@ -7,7 +7,7 @@ from pyspark.sql import types as st
 from pyspark.ml.stat import Summarizer
 
 from replay.models.base_rec import Recommender, ItemVectorModel
-from replay.utils import vector_dot, vector_mult
+from replay.utils import cache_count, vector_dot, vector_mult
 
 
 # pylint: disable=too-many-instance-attributes
@@ -85,7 +85,7 @@ class Word2VecRec(Recommender, ItemVectorModel):
             )
             .select("item_idx", "idf")
         )
-        self.idf.cache()
+        cache_count(self.idf)
 
         log_by_users = (
             log.groupBy("user_idx")
@@ -121,7 +121,7 @@ class Word2VecRec(Recommender, ItemVectorModel):
             .getVectors()
             .select(sf.col("word").cast("int").alias("item"), "vector")
         )
-        self.vectors.cache()
+        cache_count(self.vectors)
 
     def _clear_cache(self):
         if hasattr(self, "idf") and hasattr(self, "vectors"):

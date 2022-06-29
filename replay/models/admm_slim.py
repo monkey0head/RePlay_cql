@@ -8,6 +8,7 @@ from scipy.sparse import coo_matrix, csr_matrix
 
 from replay.models.base_rec import NeighbourRec
 from replay.session_handler import State
+from replay.utils import cache_count
 
 
 # pylint: disable=too-many-arguments, too-many-locals
@@ -189,7 +190,7 @@ class ADMMSLIM(NeighbourRec):
             mat_c_pd,
             schema="item_idx_one int, item_idx_two int, similarity double",
         )
-        self.similarity.cache()
+        cache_count(self.similarity)
 
     def _init_matrix(
         self, size: int

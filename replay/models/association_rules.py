@@ -7,7 +7,7 @@ from pyspark.sql import DataFrame
 from pyspark.sql.window import Window
 
 from replay.models.base_rec import Recommender
-from replay.utils import unpersist_if_exists
+from replay.utils import cache_count, unpersist_if_exists
 
 
 class AssociationRulesItemRec(Recommender):
@@ -180,31 +180,24 @@ class AssociationRulesItemRec(Recommender):
                 .drop("similarity_order")
             )
 
-        self.pair_metrics = (
-            pairs_metrics.withColumn(
-                "confidence_gain",
-                sf.when(
-                    sf.col("consequent_relevance") - sf.col("pair_relevance")
-                    == 0,
-                    sf.lit(np.inf),
-                ).otherwise(
-                    sf.col("confidence")
-                    * (num_sessions - sf.col("antecedent_relevance"))
-                    / (
-                        sf.col("consequent_relevance")
-                        - sf.col("pair_relevance")
-                    )
-                ),
-            )
-            .select(
-                "antecedent",
-                "consequent",
-                "confidence",
-                "lift",
-                "confidence_gain",
-            )
-            .cache()
+        self.pair_metrics = pairs_metrics.withColumn(
+            "confidence_gain",
+            sf.when(
+                sf.col("consequent_relevance") - sf.col("pair_relevance") == 0,
+                sf.lit(np.inf),
+            ).otherwise(
+                sf.col("confidence")
+                * (num_sessions - sf.col("antecedent_relevance"))
+                / (sf.col("consequent_relevance") - sf.col("pair_relevance"))
+            ),
+        ).select(
+            "antecedent",
+            "consequent",
+            "confidence",
+            "lift",
+            "confidence_gain",
         )
+        cache_count(self.pair_metrics)
         frequent_items_cached.unpersist()
 
     # pylint: disable=too-many-arguments

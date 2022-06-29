@@ -4,6 +4,7 @@ from pyspark.sql import DataFrame, Window
 from pyspark.sql import functions as sf
 
 from replay.models.base_rec import Recommender
+from replay.utils import cache_count
 
 
 class PopRec(Recommender):
@@ -101,7 +102,7 @@ class PopRec(Recommender):
                     ),
                 )
             )
-        self.item_popularity.cache()
+        cache_count(self.item_popularity)
 
     def _clear_cache(self):
         if hasattr(self, "item_popularity"):

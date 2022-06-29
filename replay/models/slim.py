@@ -9,6 +9,7 @@ from sklearn.linear_model import ElasticNet
 
 from replay.models.base_rec import NeighbourRec
 from replay.session_handler import State
+from replay.utils import cache_count
 
 
 class SLIM(NeighbourRec):
@@ -100,4 +101,4 @@ class SLIM(NeighbourRec):
             slim_column,
             "item_idx_one int, item_idx_two int, similarity double",
         )
-        self.similarity.cache()
+        cache_count(self.similarity)
