@@ -21,7 +21,7 @@ build-job:
     - source ./venv/bin/activate
     - pip install --upgrade pip wheel poetry
     - printf "yes" | poetry cache clear pypi --all
-    - poetry update
+#    - poetry update
     - poetry install
 
 pylint-job:
