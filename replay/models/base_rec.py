@@ -460,8 +460,8 @@ class BaseRecommender(ABC):
         items = self._filter_ids(items, "item_idx")
 
         if log is not None:
-            log = self._filter_ids(log, "user_idx")
-            log = self._filter_ids(log, "item_idx")
+            log = self._filter_ids(log, "user_idx", verbose=False)
+            log = self._filter_ids(log, "item_idx", verbose=False)
 
         num_items = items.count()
         if num_items < k:
@@ -502,16 +502,20 @@ class BaseRecommender(ABC):
             raise ValueError(f"Wrong type {type(log)}")
         return unique
 
-    def _filter_ids(self, log: DataFrame, column: str) -> DataFrame:
+    def _filter_ids(
+        self, log: DataFrame, column: str, verbose=True
+    ) -> DataFrame:
         """
         Filter out new ids if the model cannot predict cold items
         """
         entity = column.split("_")[0]
         if getattr(self, f"can_predict_cold_{entity}s"):
             return log
-        self.logger.warning(
-            "This model can't predict cold %ss, they will be ignored", entity
-        )
+        if verbose:
+            self.logger.info(
+                "This model can't predict cold %ss, they will be ignored",
+                entity,
+            )
         res = log.join(getattr(self, f"fit_{entity}s"), on=column, how="inner")
         return res
 
@@ -664,8 +668,8 @@ class BaseRecommender(ABC):
             )
 
         if log is not None:
-            log = self._filter_ids(log, "user_idx")
-            log = self._filter_ids(log, "item_idx")
+            log = self._filter_ids(log, "user_idx", verbose=False)
+            log = self._filter_ids(log, "item_idx", verbose=False)
         pairs = self._filter_ids(pairs, "item_idx")
         pairs = self._filter_ids(pairs, "user_idx")
 
