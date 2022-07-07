@@ -57,7 +57,6 @@ def logger_with_settings() -> logging.Logger:
     spark_logger = logging.getLogger("py4j")
     spark_logger.setLevel(logging.WARN)
     logger = logging.getLogger("replay")
-    logger.handlers.clear()
     formatter = logging.Formatter(
         "%(asctime)s, %(name)s, %(levelname)s: %(message)s",
         datefmt="%d-%b-%y %H:%M:%S",
