@@ -1,4 +1,4 @@
-image: 3.7-alpine
+image: '3.7-alpine'
 
 workflow:
   rules:
