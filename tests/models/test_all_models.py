@@ -11,7 +11,7 @@ from replay.models import (
     ALSWrap,
     ADMMSLIM,
     ClusterRec,
-    KNN,
+    ItemKNN,
     LightFMWrap,
     NeuroMF,
     PopRec,
@@ -52,7 +52,7 @@ def log_to_pred(spark):
     [
         ALSWrap(seed=SEED),
         ADMMSLIM(seed=SEED),
-        KNN(),
+        ItemKNN(),
         LightFMWrap(random_state=SEED),
         MultVAE(),
         NeuroMF(),
@@ -63,7 +63,7 @@ def log_to_pred(spark):
     ids=[
         "als",
         "admm_slim",
-        "knn",
+        "ItemKNN",
         "lightfm",
         "multvae",
         "neuromf",
@@ -112,11 +112,11 @@ def test_predict_pairs_warm_only(log, log_to_pred, model):
     "model",
     [
         ADMMSLIM(seed=SEED),
-        KNN(),
+        ItemKNN(),
         SLIM(seed=SEED),
         Word2VecRec(seed=SEED, min_count=0),
     ],
-    ids=["admm_slim", "knn", "slim", "word2vec",],
+    ids=["admm_slim", "ItemKNN", "slim", "word2vec",],
 )
 def test_predict_pairs_raises(log, model):
     with pytest.raises(ValueError, match="log is not provided,.*"):
@@ -140,7 +140,7 @@ def test_predict_pairs_raises_pairs_format(log):
         (ALSWrap(seed=SEED), "cosine_similarity"),
         (Word2VecRec(seed=SEED, min_count=0), "cosine_similarity"),
         (ADMMSLIM(seed=SEED), None),
-        (KNN(), None),
+        (ItemKNN(), None),
         (SLIM(seed=SEED), None),
     ],
     ids=[
@@ -149,7 +149,7 @@ def test_predict_pairs_raises_pairs_format(log):
         "als_cosine",
         "w2v_cosine",
         "admm_slim",
-        "knn",
+        "ItemKNN",
         "slim",
     ],
 )
@@ -233,7 +233,7 @@ def fit_predict_selected(model, train_log, inf_log, user_features, users):
     [
         ADMMSLIM(seed=SEED),
         ClusterRec(num_clusters=2),
-        KNN(),
+        ItemKNN(),
         LightFMWrap(random_state=SEED, no_components=4),
         MultVAE(),
         SLIM(seed=SEED),
@@ -244,7 +244,7 @@ def fit_predict_selected(model, train_log, inf_log, user_features, users):
     ids=[
         "admm_slim",
         "cluster",
-        "knn",
+        "ItemKNN",
         "lightfm",
         "multvae",
         "slim",
@@ -291,7 +291,7 @@ def test_predict_cold_users(model, long_log_with_features, user_features):
     "model",
     [
         ALSWrap(rank=2, seed=SEED),
-        KNN(),
+        ItemKNN(),
         LightFMWrap(),
         MultVAE(),
         NeuroMF(),
@@ -300,7 +300,7 @@ def test_predict_cold_users(model, long_log_with_features, user_features):
     ],
     ids=[
         "als",
-        "knn",
+        "ItemKNN",
         "lightfm_no_feat",
         "multvae",
         "neuromf",

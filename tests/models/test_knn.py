@@ -5,7 +5,7 @@ import pytest
 import numpy as np
 
 from replay.constants import LOG_SCHEMA
-from replay.models import KNN
+from replay.models import ItemKNN
 from tests.utils import spark
 
 
@@ -40,19 +40,19 @@ def weighting_log(spark):
 
 @pytest.fixture
 def model():
-    model = KNN(1, weighting=None)
+    model = ItemKNN(1, weighting=None)
     return model
 
 
 @pytest.fixture
 def tf_idf_model():
-    model = KNN(1, weighting="tf_idf")
+    model = ItemKNN(1, weighting="tf_idf")
     return model
 
 
 @pytest.fixture
 def bm25_model():
-    model = KNN(1, weighting="bm25")
+    model = ItemKNN(1, weighting="bm25")
     return model
 
 

@@ -5,18 +5,18 @@ from pyspark.sql import functions as sf
 from pyspark.sql.window import Window
 
 from replay.models.base_rec import NeighbourRec
-from replay.optuna_objective import KNNObjective
+from replay.optuna_objective import ItemKNNObjective
 
 
-class KNN(NeighbourRec):
-    """Item-based KNN with modified cosine similarity measure."""
+class ItemKNN(NeighbourRec):
+    """Item-based ItemKNN with modified cosine similarity measure."""
 
     all_items: Optional[DataFrame]
     dot_products: Optional[DataFrame]
     item_norms: Optional[DataFrame]
     k1 = 1.2
     b = 0.75
-    _objective = KNNObjective
+    _objective = ItemKNNObjective
     _search_space = {
         "num_neighbours": {"type": "int", "args": [1, 100]},
         "shrink": {"type": "int", "args": [0, 100]},
@@ -80,9 +80,9 @@ class KNN(NeighbourRec):
 
         if self.weighting in ["tf_idf", "bm25"]:
             if self.weighting == "tf_idf":
-                idf1, idf2 = KNN._get_idf(log)
+                idf1, idf2 = ItemKNN._get_idf(log)
             elif self.weighting == "bm25":
-                idf1, idf2 = KNN._get_idf_bm25(log)
+                idf1, idf2 = ItemKNN._get_idf_bm25(log)
 
             left = left.join(idf1, how="inner", on="item_idx_one")
             left = left.withColumn(
