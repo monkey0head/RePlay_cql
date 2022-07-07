@@ -121,6 +121,14 @@ class BaseRecommender(ABC):
         self.set_params(**best_params)
         return best_params
 
+    @property
+    @abstractmethod
+    def _init_args(self):
+        """
+        Dictionary of the model attributes passed during model initialization.
+        Used for model saving and loading
+        """
+
     def _init_params_in_search_space(self, search_space):
         """Check if model params are inside search space"""
         params = self._init_args  # pylint: disable=no-member
