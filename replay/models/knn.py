@@ -14,6 +14,8 @@ class KNN(NeighbourRec):
     all_items: Optional[DataFrame]
     dot_products: Optional[DataFrame]
     item_norms: Optional[DataFrame]
+    k1 = 1.2
+    b = 0.75
     _objective = KNNObjective
     _search_space = {
         "num_neighbours": {"type": "int", "args": [1, 100]},
@@ -25,15 +27,18 @@ class KNN(NeighbourRec):
         num_neighbours: int = 10,
         use_relevance: bool = False,
         shrink: float = 0.0,
+        weighting: str = "tf_idf",
     ):
         """
         :param num_neighbours: number of neighbours
         :param use_relevance: flag to use relevance values as is or to treat them as 1
         :param shrink: term added to the denominator when calculating similarity
+        :param weighting: item reweighting type
         """
         self.shrink = shrink
         self.use_relevance = use_relevance
         self.num_neighbours = num_neighbours
+        self.weighting = weighting
 
     @property
     def _init_args(self):
@@ -62,20 +67,135 @@ class KNN(NeighbourRec):
         similarity = self._shrink(dot_products, self.shrink)
         return similarity
 
+    def _get_item_vectors(self, log: DataFrame):
+        if self.weighting == "bm25":
+            left, right = self._get_tf_bm25(log)
+        else:
+            left = log.withColumnRenamed(
+                "item_idx", "item_idx_one"
+            ).withColumnRenamed("relevance", "rel_one")
+            right = log.withColumnRenamed(
+                "item_idx", "item_idx_two"
+            ).withColumnRenamed("relevance", "rel_two")
+
+        if self.weighting in ["tf_idf", "bm25"]:
+            if self.weighting == "tf_idf":
+                idf1, idf2 = KNN._get_idf(log)
+            elif self.weighting == "bm25":
+                idf1, idf2 = KNN._get_idf_bm25(log)
+
+            left = left.join(idf1, how="inner", on="item_idx_one")
+            left = left.withColumn(
+                "rel_one",
+                sf.col("rel_one") * sf.col("idf1"),
+            )
+
+            right = right.join(idf2, how="inner", on="item_idx_two")
+            right = right.withColumn(
+                "rel_two",
+                sf.col("rel_two") * sf.col("idf2"),
+            )
+
+        return left, right
+
+    def _get_tf_bm25(self, log: DataFrame):
+        user_stats = log.groupBy("user_idx").agg(
+            sf.count("item_idx").alias("n_items_per_user")
+        )
+        avgdl = user_stats.select(sf.mean("n_items_per_user")).take(1)[0][0]
+        log = log.join(user_stats, how="inner", on="user_idx")
+
+        left = (
+            log.withColumn(
+                "relevance",
+                sf.col("relevance") * (self.k1 + 1) / (
+                    sf.col("relevance") + self.k1 * (
+                        1 - self.b + self.b * (
+                            sf.col("n_items_per_user") / avgdl
+                        )
+                    )
+                )
+            )
+            .drop("n_items_per_user")
+            .withColumnRenamed("item_idx", "item_idx_one")
+            .withColumnRenamed("relevance", "rel_one")
+        )
+
+        right = (
+            log.withColumn(
+                "relevance",
+                sf.col("relevance") * (self.k1 + 1) / (
+                    sf.col("relevance") + self.k1 * (
+                        1 - self.b + self.b * (
+                            sf.col("n_items_per_user") / avgdl
+                        )
+                    )
+                )
+            )
+            .drop("n_items_per_user")
+            .withColumnRenamed("item_idx", "item_idx_two")
+            .withColumnRenamed("relevance", "rel_two")
+        )
+        return left, right
+
     @staticmethod
-    def _get_products(log: DataFrame) -> DataFrame:
+    def _get_idf(log: DataFrame):
+        df = log.groupBy("item_idx").agg(sf.count("user_idx").alias("DF"))
+        n_users = log.select("user_idx").distinct().count()
+
+        idf1 = (
+            df.withColumn("idf1", sf.log1p(sf.lit(n_users) / sf.col("DF")))
+            .drop("DF")
+            .withColumnRenamed("item_idx", "item_idx_one")
+        )
+
+        idf2 = (
+            df.withColumn("idf2", sf.log1p(sf.lit(n_users) / sf.col("DF")))
+            .drop("DF")
+            .withColumnRenamed("item_idx", "item_idx_two")
+        )
+
+        return idf1, idf2
+
+    @staticmethod
+    def _get_idf_bm25(log: DataFrame):
+        df = log.groupBy("item_idx").agg(sf.count("user_idx").alias("DF"))
+        n_users = log.select("user_idx").distinct().count()
+
+        idf1 = (
+            df.withColumn(
+                "idf1",
+                sf.log1p(
+                    (sf.lit(n_users) - sf.col("DF") + 0.5)
+                    / (sf.col("DF") + 0.5)
+                ),
+            )
+            .drop("DF")
+            .withColumnRenamed("item_idx", "item_idx_one")
+        )
+
+        idf2 = (
+            df.withColumn(
+                "idf2",
+                sf.log1p(
+                    (sf.lit(n_users) - sf.col("DF") + 0.5)
+                    / (sf.col("DF") + 0.5)
+                ),
+            )
+            .drop("DF")
+            .withColumnRenamed("item_idx", "item_idx_two")
+        )
+
+        return idf1, idf2
+
+    def _get_products(self, log: DataFrame) -> DataFrame:
         """
         Calculate item dot products
 
         :param log: DataFrame with interactions, `[user_idx, item_idx, relevance]`
         :return: similarity matrix `[item_idx_one, item_idx_two, norm1, norm2]`
         """
-        left = log.withColumnRenamed(
-            "item_idx", "item_idx_one"
-        ).withColumnRenamed("relevance", "rel_one")
-        right = log.withColumnRenamed(
-            "item_idx", "item_idx_two"
-        ).withColumnRenamed("relevance", "rel_two")
+        left, right = self._get_item_vectors(log)
 
         dot_products = (
             left.join(right, how="inner", on="user_idx")
@@ -91,7 +211,6 @@ class KNN(NeighbourRec):
             .agg(sf.sum("relevance").alias("square_norm"))
             .select(sf.col("item_idx"), sf.sqrt("square_norm").alias("norm"))
         )
-
         norm1 = item_norms.withColumnRenamed(
             "item_idx", "item_id1"
         ).withColumnRenamed("norm", "norm1")
@@ -140,5 +259,4 @@ class KNN(NeighbourRec):
             df = df.withColumn("relevance", sf.lit(1))
 
         similarity_matrix = self._get_similarity(df)
-        self.similarity = self._get_k_most_similar(similarity_matrix)
-        self.similarity.cache().count()
+        self.similarity = self._get_k_most_similar(similarity_matrix).cache()
