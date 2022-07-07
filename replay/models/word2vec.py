@@ -174,11 +174,12 @@ class Word2VecRec(Recommender, ItemVectorModel):
         user_vectors = self._get_user_vectors(
             pairs.select("user_idx").distinct(), log
         )
-        pairs_with_vectors = pairs.join(
-            user_vectors, on="user_idx", how="inner"
-        ).join(
-            self.vectors, on=sf.col("item_idx") == sf.col("item"), how="inner"
+        pairs_with_vectors = ugly_join(
+            pairs, user_vectors, on_col_name="user_idx", how="inner"
         )
+        pairs_with_vectors = pairs_with_vectors.join(
+            self.vectors, on=sf.col("item_idx") == sf.col("item"), how="inner"
+        ).drop("item")
         return pairs_with_vectors.select(
             "user_idx",
             sf.col("item_idx"),
