@@ -1,4 +1,4 @@
-image: '3.7-alpine'
+image: python:3.7-buster
 
 workflow:
   rules:
@@ -19,6 +19,8 @@ build-job:
   script:
     - python3 --version
     - rm -rf .venv/
+    - apt-get update
+    - apt-get -y install python3-venv
     - python3 -m venv venv
     - source ./venv/bin/activate
     - pip install --upgrade pip wheel poetry
