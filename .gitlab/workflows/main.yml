@@ -1,4 +1,4 @@
-image: python:3.7-buster
+image: replay/ci-image:0.0.1
 
 workflow:
   rules:
