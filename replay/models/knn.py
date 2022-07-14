@@ -33,7 +33,7 @@ class ItemKNN(NeighbourRec):
         :param num_neighbours: number of neighbours
         :param use_relevance: flag to use relevance values as is or to treat them as 1
         :param shrink: term added to the denominator when calculating similarity
-        :param weighting: item reweighting type
+        :param weighting: item reweighting type, one of [None, 'tf_idf', 'bm25']
         """
         self.shrink = shrink
         self.use_relevance = use_relevance
