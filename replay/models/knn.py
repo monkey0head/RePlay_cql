@@ -27,7 +27,7 @@ class ItemKNN(NeighbourRec):
         num_neighbours: int = 10,
         use_relevance: bool = False,
         shrink: float = 0.0,
-        weighting: str = "tf_idf",
+        weighting: str = None,
     ):
         """
         :param num_neighbours: number of neighbours
