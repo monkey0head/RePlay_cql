@@ -84,13 +84,14 @@ class ItemKNN(NeighbourRec):
             elif self.weighting == "bm25":
                 idf1, idf2 = ItemKNN._get_idf_bm25(log)
 
-            left = left.join(idf1, how="inner", on="item_idx_one")
+            left = left.join(idf1, how="inner", on="user_idx")
+
             left = left.withColumn(
                 "rel_one",
                 sf.col("rel_one") * sf.col("idf1"),
             )
 
-            right = right.join(idf2, how="inner", on="item_idx_two")
+            right = right.join(idf2, how="inner", on="user_idx")
             right = right.withColumn(
                 "rel_two",
                 sf.col("rel_two") * sf.col("idf2"),
@@ -99,11 +100,11 @@ class ItemKNN(NeighbourRec):
         return left, right
 
     def _get_tf_bm25(self, log: DataFrame):
-        user_stats = log.groupBy("user_idx").agg(
-            sf.count("item_idx").alias("n_items_per_user")
+        item_stats = log.groupBy("item_idx").agg(
+            sf.count("user_idx").alias("n_users_per_item")
         )
-        avgdl = user_stats.select(sf.mean("n_items_per_user")).take(1)[0][0]
-        log = log.join(user_stats, how="inner", on="user_idx")
+        avgdl = item_stats.select(sf.mean("n_users_per_item")).take(1)[0][0]
+        log = log.join(item_stats, how="inner", on="item_idx")
 
         left = (
             log.withColumn(
@@ -111,12 +112,12 @@ class ItemKNN(NeighbourRec):
                 sf.col("relevance") * (self.bm25_k1 + 1) / (
                     sf.col("relevance") + self.bm25_k1 * (
                         1 - self.bm25_b + self.bm25_b * (
-                            sf.col("n_items_per_user") / avgdl
+                            sf.col("n_users_per_item") / avgdl
                         )
                     )
                 )
             )
-            .drop("n_items_per_user")
+            .drop("n_users_per_item")
             .withColumnRenamed("item_idx", "item_idx_one")
             .withColumnRenamed("relevance", "rel_one")
         )
@@ -127,12 +128,12 @@ class ItemKNN(NeighbourRec):
                 sf.col("relevance") * (self.bm25_k1 + 1) / (
                     sf.col("relevance") + self.bm25_k1 * (
                         1 - self.bm25_b + self.bm25_b * (
-                            sf.col("n_items_per_user") / avgdl
+                            sf.col("n_users_per_item") / avgdl
                         )
                     )
                 )
             )
-            .drop("n_items_per_user")
+            .drop("n_users_per_item")
             .withColumnRenamed("item_idx", "item_idx_two")
             .withColumnRenamed("relevance", "rel_two")
         )
@@ -140,33 +141,31 @@ class ItemKNN(NeighbourRec):
 
     @staticmethod
     def _get_idf(log: DataFrame):
-        df = log.groupBy("item_idx").agg(sf.count("user_idx").alias("DF"))
-        n_users = log.select("user_idx").distinct().count()
+        df = log.groupBy("user_idx").agg(sf.count("item_idx").alias("DF"))
+        n_items = log.select("item_idx").distinct().count()
 
         idf1 = (
-            df.withColumn("idf1", sf.log1p(sf.lit(n_users) / sf.col("DF")))
+            df.withColumn("idf1", sf.log1p(sf.lit(n_items) / sf.col("DF")))
             .drop("DF")
-            .withColumnRenamed("item_idx", "item_idx_one")
         )
 
         idf2 = (
-            df.withColumn("idf2", sf.log1p(sf.lit(n_users) / sf.col("DF")))
+            df.withColumn("idf2", sf.log1p(sf.lit(n_items) / sf.col("DF")))
             .drop("DF")
-            .withColumnRenamed("item_idx", "item_idx_two")
         )
 
         return idf1, idf2
 
     @staticmethod
     def _get_idf_bm25(log: DataFrame):
-        df = log.groupBy("item_idx").agg(sf.count("user_idx").alias("DF"))
-        n_users = log.select("user_idx").distinct().count()
+        df = log.groupBy("user_idx").agg(sf.count("item_idx").alias("DF"))
+        n_items = log.select("item_idx").distinct().count()
 
         idf1 = (
             df.withColumn(
                 "idf1",
                 sf.log1p(
-                    (sf.lit(n_users) - sf.col("DF") + 0.5)
+                    (sf.lit(n_items) - sf.col("DF") + 0.5)
                     / (sf.col("DF") + 0.5)
                 ),
             )
@@ -178,7 +177,7 @@ class ItemKNN(NeighbourRec):
             df.withColumn(
                 "idf2",
                 sf.log1p(
-                    (sf.lit(n_users) - sf.col("DF") + 0.5)
+                    (sf.lit(n_items) - sf.col("DF") + 0.5)
                     / (sf.col("DF") + 0.5)
                 ),
             )

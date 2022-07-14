@@ -69,10 +69,13 @@ def test_tf_idf(weighting_log, tf_idf_model):
     idf2 = idf2.toPandas()
     assert np.array_equal(idf1.values, idf2.values)
     assert np.allclose(
-        idf1[idf1["item_idx_one"] == 0]["idf1"], np.log1p(3 / 2)
+        idf1[idf1["user_idx"] == 1]["idf1"], np.log1p(2 / 1)
     )
     assert np.allclose(
-        idf1[idf1["item_idx_one"] == 1]["idf1"], np.log1p(3 / 3)
+        idf1[idf1["user_idx"] == 0]["idf1"], np.log1p(2 / 2)
+    )
+    assert np.allclose(
+        idf1[idf1["user_idx"] == 2]["idf1"], np.log1p(2 / 2)
     )
 
     tf_idf_model.fit(weighting_log)
@@ -81,24 +84,20 @@ def test_tf_idf(weighting_log, tf_idf_model):
 
 
 def test_bm25(weighting_log, bm25_model):
-    k1 = bm25_model.k1
-    b = bm25_model.b
-    avgdl = (1 + 2 + 2) / 3
+    k1 = bm25_model.bm25_k1
+    b = bm25_model.bm25_b
+    avgdl = (2 + 3) / 2
 
     tf1, tf2 = bm25_model._get_tf_bm25(weighting_log)
     tf1 = tf1.toPandas()
     tf2 = tf2.toPandas()
     assert np.array_equal(tf1.values, tf2.values)
     assert np.allclose(
-        tf1[tf1["user_idx"] == 0]["rel_one"],
-        1 * (k1 + 1) / (1 + k1 * (1 - b + b * 2 / avgdl)),
+        tf1[tf1["item_idx_one"] == 1]["rel_one"],
+        1 * (k1 + 1) / (1 + k1 * (1 - b + b * 3 / avgdl)),
     )
     assert np.allclose(
-        tf1[tf1["user_idx"] == 1]["rel_one"],
-        1 * (k1 + 1) / (1 + k1 * (1 - b + b * 1 / avgdl)),
-    )
-    assert np.allclose(
-        tf1[tf1["user_idx"] == 2]["rel_one"],
+        tf1[tf1["item_idx_one"] == 0]["rel_one"],
         1 * (k1 + 1) / (1 + k1 * (1 - b + b * 2 / avgdl)),
     )
 
@@ -107,12 +106,16 @@ def test_bm25(weighting_log, bm25_model):
     idf2 = idf2.toPandas()
     assert np.array_equal(idf1.values, idf2.values)
     assert np.allclose(
-        idf1[idf1["item_idx_one"] == 0]["idf1"],
-        np.log1p((3 - 2 + 0.5) / (2 + 0.5)),
+        idf1[idf1["user_idx"] == 1]["idf1"],
+        np.log1p((2 - 1 + 0.5) / (1 + 0.5)),
     )
     assert np.allclose(
-        idf1[idf1["item_idx_one"] == 1]["idf1"],
-        np.log1p((3 - 3 + 0.5) / (3 + 0.5)),
+        idf1[idf1["user_idx"] == 0]["idf1"],
+        np.log1p((2 - 2 + 0.5) / (2 + 0.5)),
+    )
+    assert np.allclose(
+        idf1[idf1["user_idx"] == 2]["idf1"],
+        np.log1p((2 - 2 + 0.5) / (2 + 0.5)),
     )
 
     bm25_model.fit(weighting_log)
