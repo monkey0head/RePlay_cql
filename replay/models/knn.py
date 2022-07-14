@@ -14,8 +14,8 @@ class ItemKNN(NeighbourRec):
     all_items: Optional[DataFrame]
     dot_products: Optional[DataFrame]
     item_norms: Optional[DataFrame]
-    k1 = 1.2
-    b = 0.75
+    bm25_k1 = 1.2
+    bm25_b = 0.75
     _objective = ItemKNNObjective
     _search_space = {
         "num_neighbours": {"type": "int", "args": [1, 100]},
@@ -108,9 +108,9 @@ class ItemKNN(NeighbourRec):
         left = (
             log.withColumn(
                 "relevance",
-                sf.col("relevance") * (self.k1 + 1) / (
-                    sf.col("relevance") + self.k1 * (
-                        1 - self.b + self.b * (
+                sf.col("relevance") * (self.bm25_k1 + 1) / (
+                    sf.col("relevance") + self.bm25_k1 * (
+                        1 - self.bm25_b + self.bm25_b * (
                             sf.col("n_items_per_user") / avgdl
                         )
                     )
@@ -124,9 +124,9 @@ class ItemKNN(NeighbourRec):
         right = (
             log.withColumn(
                 "relevance",
-                sf.col("relevance") * (self.k1 + 1) / (
-                    sf.col("relevance") + self.k1 * (
-                        1 - self.b + self.b * (
+                sf.col("relevance") * (self.bm25_k1 + 1) / (
+                    sf.col("relevance") + self.bm25_k1 * (
+                        1 - self.bm25_b + self.bm25_b * (
                             sf.col("n_items_per_user") / avgdl
                         )
                     )
