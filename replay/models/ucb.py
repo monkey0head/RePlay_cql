@@ -53,6 +53,14 @@ class UCB(Recommender):
         # pylint: disable=super-init-not-called
         self.coef = coef
 
+    @property
+    def _init_args(self):
+        return {"coef": self.coef}
+
+    @property
+    def _dataframes(self):
+        return {"item_popularity": self.item_popularity}
+
     def _fit(
         self,
         log: DataFrame,
@@ -149,5 +157,5 @@ class UCB(Recommender):
         item_features: Optional[DataFrame] = None,
     ) -> DataFrame:
         return pairs.join(
-            self.item_popularity, on="item_idx", how="right"
+            self.item_popularity, on="item_idx", how="left"
         ).fillna(value=self.fill, subset=["relevance"])
