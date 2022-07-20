@@ -341,8 +341,8 @@ class BaseRecommender(ABC):
                 .union(item_features.select("item_idx"))
                 .distinct()
             )
-        self.fit_users = users.cache()
-        self.fit_items = items.cache()
+        self.fit_users = sf.broadcast(users)
+        self.fit_items = sf.broadcast(items)
         self._num_users = self.fit_users.count()
         self._num_items = self.fit_items.count()
         self._user_dim_size = (
@@ -461,15 +461,19 @@ class BaseRecommender(ABC):
         self.logger.debug("Starting predict %s", type(self).__name__)
         user_data = users or log or user_features or self.fit_users
         users = self._get_ids(user_data, "user_idx")
-        users = self._filter_ids(users, "user_idx")
+
+        num_new_users_pairs, users = self._filter_cold(users, "user_idx")
+        if num_new_users_pairs > 0:
+            self._warn_on_cold(entity="user")
+        _, log = self._filter_cold(log, "user_idx")
 
         item_data = items or self.fit_items
         items = self._get_ids(item_data, "item_idx")
-        items = self._filter_ids(items, "item_idx")
 
-        if log is not None:
-            log = self._filter_ids(log, "user_idx", verbose=False)
-            log = self._filter_ids(log, "item_idx", verbose=False)
+        num_new_items_pairs, items = self._filter_cold(items, "item_idx")
+        if num_new_items_pairs > 0:
+            self._warn_on_cold(entity="item")
+        _, log = self._filter_cold(log, "item_idx")
 
         num_items = items.count()
         if num_items < k:
@@ -510,22 +514,30 @@ class BaseRecommender(ABC):
             raise ValueError(f"Wrong type {type(log)}")
         return unique
 
-    def _filter_ids(
-        self, log: DataFrame, column: str, verbose=True
-    ) -> DataFrame:
+    def _filter_cold(
+        self, df: Optional[DataFrame], col_name: str
+    ) -> Tuple[int, Optional[DataFrame]]:
         """
-        Filter out new ids if the model cannot predict cold items
+        Filter out new ids if the model cannot predict cold users/items.
+        Return number of new users/items and filtered dataframe.
         """
-        entity = column.split("_")[0]
-        if getattr(self, f"can_predict_cold_{entity}s"):
-            return log
-        if verbose:
-            self.logger.info(
-                "This model can't predict cold %ss, they will be ignored",
-                entity,
-            )
-        res = log.join(getattr(self, f"fit_{entity}s"), on=column, how="inner")
-        return res
+        entity = col_name.split("_")[0]
+
+        if getattr(self, f"can_predict_cold_{entity}s") or df is None:
+            return 0, df
+
+        num_new = (
+            df.select(col_name)
+            .distinct()
+            .join(getattr(self, f"fit_{entity}s"), on=col_name, how="anti")
+            .count()
+        )
+        if num_new == 0:
+            return 0, df
+
+        return num_new, df.join(
+            getattr(self, f"fit_{entity}s"), on=col_name, how="inner"
+        )
 
     # pylint: disable=too-many-arguments
     @abstractmethod
@@ -645,6 +657,13 @@ class BaseRecommender(ABC):
         Clear spark cache
         """
 
+    def _warn_on_cold(self, entity: str) -> None:
+        self.logger.info(
+            "%s model can't predict cold %ss, they will be ignored",
+            self,
+            entity,
+        )
+
     def _predict_pairs_wrap(
         self,
         pairs: DataFrame,
@@ -675,11 +694,15 @@ class BaseRecommender(ABC):
                 "pairs must be a dataframe with columns strictly [user_idx, item_idx]"
             )
 
-        if log is not None:
-            log = self._filter_ids(log, "user_idx", verbose=False)
-            log = self._filter_ids(log, "item_idx", verbose=False)
-        pairs = self._filter_ids(pairs, "item_idx")
-        pairs = self._filter_ids(pairs, "user_idx")
+        num_new_users_pairs, pairs = self._filter_cold(pairs, "user_idx")
+        if num_new_users_pairs > 0:
+            self._warn_on_cold(entity="user")
+        _, log = self._filter_cold(log, "user_idx")
+
+        num_new_items_pairs, pairs = self._filter_cold(pairs, "item_idx")
+        if num_new_items_pairs > 0:
+            self._warn_on_cold(entity="item")
+        _, log = self._filter_cold(log, "item_idx")
 
         pred = self._predict_pairs(
             pairs=pairs,
