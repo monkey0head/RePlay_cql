@@ -462,16 +462,16 @@ class BaseRecommender(ABC):
         user_data = users or log or user_features or self.fit_users
         users = self._get_ids(user_data, "user_idx")
 
-        num_new_users_pairs, users = self._filter_cold(users, "user_idx")
-        if num_new_users_pairs > 0:
+        num_new_users, users = self._filter_cold(users, "user_idx")
+        if num_new_users > 0:
             self._warn_on_cold(entity="user")
         _, log = self._filter_cold(log, "user_idx")
 
         item_data = items or self.fit_items
         items = self._get_ids(item_data, "item_idx")
 
-        num_new_items_pairs, items = self._filter_cold(items, "item_idx")
-        if num_new_items_pairs > 0:
+        num_new_items, items = self._filter_cold(items, "item_idx")
+        if num_new_items > 0:
             self._warn_on_cold(entity="item")
         _, log = self._filter_cold(log, "item_idx")
 
@@ -694,13 +694,13 @@ class BaseRecommender(ABC):
                 "pairs must be a dataframe with columns strictly [user_idx, item_idx]"
             )
 
-        num_new_users_pairs, pairs = self._filter_cold(pairs, "user_idx")
-        if num_new_users_pairs > 0:
+        num_new_users, pairs = self._filter_cold(pairs, "user_idx")
+        if num_new_users > 0:
             self._warn_on_cold(entity="user")
         _, log = self._filter_cold(log, "user_idx")
 
-        num_new_items_pairs, pairs = self._filter_cold(pairs, "item_idx")
-        if num_new_items_pairs > 0:
+        num_new_items, pairs = self._filter_cold(pairs, "item_idx")
+        if num_new_items > 0:
             self._warn_on_cold(entity="item")
         _, log = self._filter_cold(log, "item_idx")
 
