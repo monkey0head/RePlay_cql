@@ -461,19 +461,11 @@ class BaseRecommender(ABC):
         self.logger.debug("Starting predict %s", type(self).__name__)
         user_data = users or log or user_features or self.fit_users
         users = self._get_ids(user_data, "user_idx")
-
-        num_new_users, users = self._filter_cold(users, "user_idx")
-        if num_new_users > 0:
-            self._warn_on_cold(entity="user")
-        _, log = self._filter_cold(log, "user_idx")
+        users, log = self._filter_cold_for_predict(users, log, "user")
 
         item_data = items or self.fit_items
         items = self._get_ids(item_data, "item_idx")
-
-        num_new_items, items = self._filter_cold(items, "item_idx")
-        if num_new_items > 0:
-            self._warn_on_cold(entity="item")
-        _, log = self._filter_cold(log, "item_idx")
+        items, log = self._filter_cold_for_predict(items, log, "item")
 
         num_items = items.count()
         if num_items < k:
@@ -538,6 +530,21 @@ class BaseRecommender(ABC):
         return num_new, df.join(
             getattr(self, f"fit_{entity}s"), on=col_name, how="inner"
         )
+
+    def _filter_cold_for_predict(self, main_df, log_df, entity, suffix="idx"):
+        """
+        Filter out cold entities (users/items) from the `main_df` and `log_df`.
+        Warn if cold entities are present in the `main_df`.
+        """
+        num_new, main_df = self._filter_cold(main_df, f"{entity}_{suffix}")
+        if num_new > 0:
+            self.logger.info(
+                "%s model can't predict cold %ss, they will be ignored",
+                self,
+                entity,
+            )
+        _, log_df = self._filter_cold(log_df, f"{entity}_{suffix}")
+        return main_df, log_df
 
     # pylint: disable=too-many-arguments
     @abstractmethod
@@ -657,13 +664,6 @@ class BaseRecommender(ABC):
         Clear spark cache
         """
 
-    def _warn_on_cold(self, entity: str) -> None:
-        self.logger.info(
-            "%s model can't predict cold %ss, they will be ignored",
-            self,
-            entity,
-        )
-
     def _predict_pairs_wrap(
         self,
         pairs: DataFrame,
@@ -693,16 +693,8 @@ class BaseRecommender(ABC):
             raise ValueError(
                 "pairs must be a dataframe with columns strictly [user_idx, item_idx]"
             )
-
-        num_new_users, pairs = self._filter_cold(pairs, "user_idx")
-        if num_new_users > 0:
-            self._warn_on_cold(entity="user")
-        _, log = self._filter_cold(log, "user_idx")
-
-        num_new_items, pairs = self._filter_cold(pairs, "item_idx")
-        if num_new_items > 0:
-            self._warn_on_cold(entity="item")
-        _, log = self._filter_cold(log, "item_idx")
+        pairs, log = self._filter_cold_for_predict(pairs, log, "user")
+        pairs, log = self._filter_cold_for_predict(pairs, log, "item")
 
         pred = self._predict_pairs(
             pairs=pairs,
