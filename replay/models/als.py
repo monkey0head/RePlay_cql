@@ -94,12 +94,15 @@ class ALSWrap(Recommender, ItemVectorModel):
         ):
             max_seen = 0
             if filter_seen_items and log is not None:
-                max_seen += (
+                max_seen_in_log = (
                     log.join(users, on="user_idx")
                     .groupBy("user_idx")
                     .agg(sf.count("user_idx").alias("num_seen"))
                     .select(sf.max("num_seen"))
                     .collect()[0][0]
+                )
+                max_seen += (
+                    max_seen_in_log if max_seen_in_log is not None else 0
                 )
 
             recs_als = self.model.recommendForUserSubset(users, k + max_seen)
