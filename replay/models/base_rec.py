@@ -507,43 +507,48 @@ class BaseRecommender(ABC):
         return unique
 
     def _filter_cold(
-        self, df: Optional[DataFrame], col_name: str
+        self, df: Optional[DataFrame], entity: str, suffix: str = "idx"
     ) -> Tuple[int, Optional[DataFrame]]:
         """
         Filter out new ids if the model cannot predict cold users/items.
         Return number of new users/items and filtered dataframe.
         """
-        entity = col_name.split("_")[0]
-
         if getattr(self, f"can_predict_cold_{entity}s") or df is None:
             return 0, df
 
-        num_new = (
+        col_name = f"{entity}_{suffix}"
+        num_cold = (
             df.select(col_name)
             .distinct()
             .join(getattr(self, f"fit_{entity}s"), on=col_name, how="anti")
             .count()
         )
-        if num_new == 0:
+        if num_cold == 0:
             return 0, df
 
-        return num_new, df.join(
+        return num_cold, df.join(
             getattr(self, f"fit_{entity}s"), on=col_name, how="inner"
         )
 
-    def _filter_cold_for_predict(self, main_df, log_df, entity, suffix="idx"):
+    def _filter_cold_for_predict(
+        self,
+        main_df: DataFrame,
+        log_df: DataFrame,
+        entity: str,
+        suffix: str = "idx",
+    ):
         """
         Filter out cold entities (users/items) from the `main_df` and `log_df`.
         Warn if cold entities are present in the `main_df`.
         """
-        num_new, main_df = self._filter_cold(main_df, f"{entity}_{suffix}")
+        num_new, main_df = self._filter_cold(main_df, entity, suffix)
         if num_new > 0:
             self.logger.info(
                 "%s model can't predict cold %ss, they will be ignored",
                 self,
                 entity,
             )
-        _, log_df = self._filter_cold(log_df, f"{entity}_{suffix}")
+        _, log_df = self._filter_cold(log_df, entity, suffix)
         return main_df, log_df
 
     # pylint: disable=too-many-arguments
