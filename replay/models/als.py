@@ -79,7 +79,7 @@ class ALSWrap(Recommender, ItemVectorModel):
     # pylint: disable=too-many-arguments
     def _predict(
         self,
-        log: DataFrame,
+        log: Optional[DataFrame],
         k: int,
         users: DataFrame,
         items: DataFrame,
@@ -93,7 +93,7 @@ class ALSWrap(Recommender, ItemVectorModel):
             == self.fit_items.count()
         ):
             max_seen = 0
-            if filter_seen_items:
+            if filter_seen_items and log is not None:
                 max_seen += (
                     log.join(users, on="user_idx")
                     .groupBy("user_idx")
