@@ -225,9 +225,9 @@ def parse_args():
     parser.add_argument('--label', dest='label', default=datetime.datetime.now())
     # experiments
     parser.add_argument('--scale', dest='scale', type=float, default=0.1)
-    parser.add_argument('--pos', dest='positive', action='store_true', default=True)
-    parser.add_argument('--bin', dest='binary', action='store_true', default=True)
-    parser.add_argument('--top', dest='reward_top_k', action='store_true', default=True)
+    parser.add_argument('--pos', dest='positive', action='store_true', default=False)
+    parser.add_argument('--bin', dest='binary', action='store_true', default=False)
+    parser.add_argument('--top', dest='reward_top_k', action='store_true', default=False)
 
     return parser.parse_args()
 
