@@ -77,7 +77,7 @@ def main():
             'relevance',
             sf
             .when(sf.col('relevance') == sf.lit(1.0), sf.lit(-1.0))
-            .when(sf.col('relevance') == sf.lit(2.0), sf.lit(-0.5))
+            .when(sf.col('relevance') == sf.lit(2.0), sf.lit(-0.3))
             .when(sf.col('relevance') == sf.lit(3.0), sf.lit(0.25))
             .when(sf.col('relevance') == sf.lit(4.0), sf.lit(0.7))
             .when(sf.col('relevance') == sf.lit(5.0), sf.lit(1.0))
@@ -107,7 +107,16 @@ def main():
     })
 
     algorithms_and_trains = {
-        f'CQL_{e}': (CQL(use_gpu=use_gpu, k=K, n_epochs=e), cql_train)
+        f'CQL_{e}': (
+            CQL(
+                use_gpu=use_gpu, k=K, n_epochs=e,
+                action_randomization_scale=args.scale,
+                binarized_relevance=args.binary,
+                negative_examples=not args.positive,
+                reward_only_top_k=args.reward_top_k
+            ),
+            cql_train
+        )
         for e in n_epochs
     }
 
@@ -218,6 +227,7 @@ def parse_args():
     parser.add_argument('--scale', dest='scale', type=float, default=0.1)
     parser.add_argument('--pos', dest='positive', action='store_true', default=True)
     parser.add_argument('--bin', dest='binary', action='store_true', default=True)
+    parser.add_argument('--top', dest='reward_top_k', action='store_true', default=True)
 
     return parser.parse_args()
 

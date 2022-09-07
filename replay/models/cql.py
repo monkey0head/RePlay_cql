@@ -115,6 +115,7 @@ class CQL(Recommender):
     k: int
     n_epochs: int
     action_randomization_scale: float
+    binarized_relevance: bool
     negative_examples: bool
     reward_only_top_k: bool
 
@@ -134,6 +135,7 @@ class CQL(Recommender):
             self, *,
             k: int, n_epochs: int = 1,
             action_randomization_scale: float = 0.,
+            binarized_relevance: bool = True,
             negative_examples: bool = False,
             reward_only_top_k: bool = True,
 
@@ -171,6 +173,7 @@ class CQL(Recommender):
         self.k = k
         self.n_epochs = n_epochs
         self.action_randomization_scale = action_randomization_scale
+        self.binarized_relevance = binarized_relevance
         self.negative_examples = negative_examples
         self.reward_only_top_k = reward_only_top_k
 
@@ -251,16 +254,29 @@ class CQL(Recommender):
         # TODO: consider making calculations in Spark before converting to pandas
         user_logs = log.toPandas().sort_values(['user_idx', 'timestamp'], ascending=True)
 
-        # reward top-K watched movies with 1, the others - with 0
-        user_top_k_idxs = (
-            user_logs
-            .sort_values(['relevance', 'timestamp'], ascending=[False, True])
-            .groupby('user_idx')
-            .head(self.k)
-            .index
-        )
         rewards = np.zeros(len(user_logs))
-        rewards[user_top_k_idxs] = 1.0
+        if not self.binarized_relevance:
+            rewards = user_logs['relevance']
+
+        if self.reward_only_top_k:
+            # reward top-K watched movies with 1, the others - with 0
+            user_top_k_idxs = (
+                user_logs
+                .sort_values(['relevance', 'timestamp'], ascending=[False, True])
+                .groupby('user_idx')
+                .head(self.k)
+                .index
+            )
+            if self.binarized_relevance:
+                rewards[user_top_k_idxs] = 1.0
+            else:
+                rewards[rewards > 0] /= 2
+                rewards[user_top_k_idxs] += 0.5
+
+        if self.negative_examples and self.binarized_relevance:
+            negative_idxs = user_logs[user_logs['relevance'] <= 0].index
+            rewards[negative_idxs] = -1.0
+
         user_logs['rewards'] = rewards
 
         # every user has his own episode (the latest item is defined as terminal)
