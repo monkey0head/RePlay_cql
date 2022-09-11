@@ -102,8 +102,8 @@ def main():
     print(f'data prep: \t\t{time.time() - start:.3f}')
 
     experiment = Experiment(test, {
-        MAP(): K, NDCG(): K, HitRate(): K_list_metrics, Coverage(log): K, Surprisal(log): K,
-        MRR(): K
+        MAP(): K, NDCG(): K, HitRate(): K_list_metrics,
+        Coverage(log): K, Surprisal(log): K, MRR(): K
     })
 
     algorithms_and_trains = {
