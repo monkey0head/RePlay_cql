@@ -49,7 +49,7 @@ RUN mamba init zsh; \
     source /root/.zshrc; \
     mamba create --name offrl python=3.9 pip wheel poetry cython -y; \
     mamba activate offrl; \
-    mamba install requests pypandoc optuna -y; \
+    mamba install requests pypandoc optuna tabulate -y; \
     pip install datatable; \
     poetry install; \
     pip install -U d3rlpy rs_datasets;
