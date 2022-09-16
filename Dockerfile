@@ -48,9 +48,14 @@ RUN mamba init -y; \
     echo "alias cn='mamba'" >> /root/.zshrc; \
     . /root/.zshrc; \
     mamba activate base; \
-    mamba create --name offrl python=3.9 pip wheel poetry cython -y; \
+    mamba create --name offrl python=3.9 pip wheel poetry cython -y;
+
+RUN mamba init -y; \
+    echo "alias cn='mamba'" >> /root/.zshrc; \
+    . /root/.zshrc; \
     mamba activate offrl; \
     mamba install requests pypandoc optuna -y; \
+    pip install datatable; \
     poetry install; \
-    pip install -U rs_datasets; \
+    pip install -U rs_datasets;
 
