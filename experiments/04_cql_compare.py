@@ -16,7 +16,8 @@ from pyspark.sql import functions as sf, SparkSession
 from replay.data_preparator import DataPreparator, Indexer
 from replay.experiment import Experiment
 from replay.metrics import HitRate, NDCG, MAP, MRR, Coverage, Surprisal
-from replay.models import ALSWrap, ItemKNN, LightFMWrap, SLIM, UCB, CQL, Wilson, Recommender
+from replay.models import ALSWrap, ItemKNN, LightFMWrap, SLIM, UCB, CQL, Recommender
+from replay.models.sdac.sdac import SDAC
 from replay.session_handler import State, get_spark_session
 from replay.splitters import DateSplitter
 from replay.utils import get_log_info
@@ -106,31 +107,40 @@ def main():
         Coverage(log): K, Surprisal(log): K, MRR(): K
     })
 
-    algorithms_and_trains = {
-        f'CQL_{e}': (
-            CQL(
-                use_gpu=use_gpu, k=K, n_epochs=e,
-                action_randomization_scale=args.scale,
-                binarized_relevance=args.binary,
-                negative_examples=not args.positive,
-                reward_only_top_k=args.reward_top_k
-            ),
-            cql_train
-        )
-        for e in n_epochs
-    }
+    algorithms = set(map(str.lower, args.algorithms))
 
-    if not args.cql_only:
+    def common_builder(ctor, e):
+        return ctor(
+            use_gpu=use_gpu, k=K, n_epochs=e,
+            action_randomization_scale=args.scale,
+            binarized_relevance=args.binary,
+            negative_examples=not args.positive,
+            reward_only_top_k=args.reward_top_k
+        )
+
+    algorithms_and_trains = {}
+    if 'cql' in algorithms:
         algorithms_and_trains.update({
-            'ALS': (ALSWrap(seed=SEED), pos_binary_train),
-            'KNN': (ItemKNN(num_neighbours=K), pos_binary_train),
-            'LightFM': (LightFMWrap(random_state=SEED), pos_binary_train),
-            'UCB': (UCB(exploration_coef=0.5), binary_train)
+            f'CQL_{e}': (common_builder(CQL, e), cql_train)
+            for e in n_epochs
         })
-        if args.test_slim:
-            algorithms_and_trains.update({
-                'SLIM': (SLIM(seed=SEED), pos_binary_train)
-            })
+
+    if 'sdac' in algorithms:
+        algorithms_and_trains.update({
+            f'SDAC_{e}': (common_builder(SDAC, e), cql_train)
+            for e in n_epochs
+        })
+
+    if 'als' in algorithms:
+        algorithms_and_trains['ALS'] = (ALSWrap(seed=SEED), pos_binary_train)
+    if 'knn' in algorithms:
+        algorithms_and_trains['KNN'] = (ItemKNN(num_neighbours=K), pos_binary_train)
+    if 'lightfm' in algorithms:
+        algorithms_and_trains['LightFM'] = (LightFMWrap(random_state=SEED), pos_binary_train)
+    if 'ucb' in algorithms:
+        algorithms_and_trains['UCB'] = (UCB(exploration_coef=0.5), binary_train)
+    if 'slim' in algorithms:
+        algorithms_and_trains['SLIM'] = (SLIM(seed=SEED), pos_binary_train)
 
     logger = logging.getLogger("replay")
     results_label = f'{args.label}.{ds}.md'
@@ -218,12 +228,9 @@ def parse_args():
     parser.add_argument('--epochs', dest='epochs', nargs='*', type=int, default=[1])
     parser.add_argument('--part', dest='partitions', type=float, default=0.8)
     parser.add_argument('--mem', dest='memory', type=float, default=0.7)
-    # testing hacks and whistles
-    parser.add_argument('--slim', dest='test_slim', action='store_true', default=False)
-    parser.add_argument('--cql', dest='cql_only', action='store_true', default=False)
-    # parser.add_argument('--cache', dest='cache', action='store_true', default=False)
-    parser.add_argument('--label', dest='label', default=datetime.datetime.now())
+    parser.add_argument('--algos', dest='algorithms', nargs='*', type=str, default=[])
     # experiments
+    parser.add_argument('--label', dest='label', default=datetime.datetime.now())
     parser.add_argument('--scale', dest='scale', type=float, default=0.1)
     parser.add_argument('--pos', dest='positive', action='store_true', default=False)
     parser.add_argument('--bin', dest='binary', action='store_true', default=False)
