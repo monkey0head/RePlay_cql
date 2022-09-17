@@ -17,6 +17,7 @@ from replay.data_preparator import DataPreparator, Indexer
 from replay.experiment import Experiment
 from replay.metrics import HitRate, NDCG, MAP, MRR, Coverage, Surprisal
 from replay.models import ALSWrap, ItemKNN, LightFMWrap, SLIM, UCB, CQL, Recommender
+from replay.models.crr import CRR
 from replay.models.sdac.sdac import SDAC
 from replay.session_handler import State, get_spark_session
 from replay.splitters import DateSplitter
@@ -128,6 +129,12 @@ def main():
     if 'sdac' in algorithms:
         algorithms_and_trains.update({
             f'SDAC_{e}': (common_builder(SDAC, e), cql_train)
+            for e in n_epochs
+        })
+
+    if 'crr' in algorithms:
+        algorithms_and_trains.update({
+            f'CRR_{e}': (common_builder(CRR, e), cql_train)
             for e in n_epochs
         })
 

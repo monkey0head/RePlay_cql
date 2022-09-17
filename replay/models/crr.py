@@ -216,7 +216,7 @@ class CRR(Recommender):
         filter_seen_items: bool = True,
     ) -> DataFrame:
         if user_features or item_features:
-            message = f'CQL recommender does not support user/item features'
+            message = f'CRR recommender does not support user/item features'
             self.logger.debug(message)
 
         users = users.toPandas().to_numpy().flatten()
