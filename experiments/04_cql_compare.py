@@ -38,6 +38,10 @@ def main():
     args = parse_args()
     ds = args.dataset
     n_epochs: set[int] = set(args.epochs)
+    if args.gpu < 0:
+        use_gpu = False
+    elif use_gpu:
+        use_gpu = args.gpu
 
     init_spark_session(args.memory, args.partitions)
     df_log, col_mapping = get_dataset(ds)
@@ -236,6 +240,8 @@ def parse_args():
     parser.add_argument('--part', dest='partitions', type=float, default=0.8)
     parser.add_argument('--mem', dest='memory', type=float, default=0.7)
     parser.add_argument('--algos', dest='algorithms', nargs='*', type=str, default=[])
+    parser.add_argument('--gpu', dest='gpu', type=int, default=-1)
+
     # experiments
     parser.add_argument('--label', dest='label', default=datetime.datetime.now())
     parser.add_argument('--scale', dest='scale', type=float, default=0.1)
