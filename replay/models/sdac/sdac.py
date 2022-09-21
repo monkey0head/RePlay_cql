@@ -274,8 +274,8 @@ class SDAC(Recommender):
         user_logs['terminals'] = terminals
 
         # cannot set zero scale as d3rlpy will treat transitions as discrete :/
-        # action_randomization_scale = self.action_randomization_scale + 1e-4
-        action_randomization = np.zeros(len(user_logs))
+        action_randomization_scale = self.action_randomization_scale + 1e-4
+        action_randomization = np.random.normal(len(user_logs)) * action_randomization_scale
 
         train_dataset = MDPDataset(
             observations=np.array(user_logs[['user_idx', 'item_idx']]),

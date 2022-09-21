@@ -38,10 +38,13 @@ class GumbelPolicy(CategoricalPolicy):
             picked_actions = dist.hard_sample().argmax(dim=1)
         else:
             picked_actions, log_prob = dist.sample_with_log_prob()
+            # picked_actions = picked_actions.argmax(dim=1)
+            # print('picked_actions', picked_actions)
+            # print('log_prob', log_prob)
             if with_log_prob:
                 return picked_actions, log_prob
 
-        print('policy forward', picked_actions.dim())
+        # print('policy forward', picked_actions.dim())
         return picked_actions
 
     def dist(self, x: torch.Tensor) -> GumbelDistribution:
