@@ -16,8 +16,9 @@ from pyspark.sql import functions as sf, SparkSession
 from replay.data_preparator import DataPreparator, Indexer
 from replay.experiment import Experiment
 from replay.metrics import HitRate, NDCG, MAP, MRR, Coverage, Surprisal
-from replay.models import ALSWrap, ItemKNN, LightFMWrap, SLIM, UCB, CQL, Recommender
+from replay.models import ALSWrap, ItemKNN, LightFMWrap, SLIM, UCB, CQL, Recommender, RandomRec
 from replay.models.crr import CRR
+from replay.models.ddpg import DDPG
 from replay.models.sdac.sdac import SDAC
 from replay.session_handler import State, get_spark_session
 from replay.splitters import DateSplitter
@@ -142,6 +143,8 @@ def main():
             for e in n_epochs
         })
 
+    if 'ddpg' in algorithms:
+        algorithms_and_trains['DDPG'] = (DDPG(seed=SEED, user_num=1000, item_num=2500), pos_binary_train)
     if 'als' in algorithms:
         algorithms_and_trains['ALS'] = (ALSWrap(seed=SEED), pos_binary_train)
     if 'knn' in algorithms:
@@ -152,6 +155,12 @@ def main():
         algorithms_and_trains['UCB'] = (UCB(exploration_coef=0.5), binary_train)
     if 'slim' in algorithms:
         algorithms_and_trains['SLIM'] = (SLIM(seed=SEED), pos_binary_train)
+    if 'rand' in algorithms:
+        algorithms_and_trains['Rand'] = (RandomRec(seed=SEED, add_cold=False), pos_binary_train)
+    if 'popular' in algorithms:
+        algorithms_and_trains['Popular'] = (
+            RandomRec(distribution='popular_based', seed=SEED, add_cold=False), pos_binary_train
+        )
 
     logger = logging.getLogger("replay")
     results_label = f'{args.label}.{ds}.md'
