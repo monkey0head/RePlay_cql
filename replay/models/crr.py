@@ -3,7 +3,7 @@ Using CQL implementation from `d3rlpy` package.
 For 'alpha' version PySpark DataFrame are converted to Pandas
 """
 
-from typing import Optional
+from typing import Optional, Callable
 
 import d3rlpy.algos.crr as CRR_d3rlpy
 import numpy as np
@@ -18,9 +18,10 @@ from pyspark.sql import DataFrame
 
 from replay.data_preparator import DataPreparator
 from replay.models import Recommender
+from replay.models.cql import RLRecommender
 
 
-class CRR(Recommender):
+class CRR(RLRecommender):
     r"""Critic Reguralized Regression algorithm.
 
     CRR is a simple offline RL method similar to AWAC.
@@ -113,13 +114,6 @@ class CRR(Recommender):
 
     """
 
-    k: int
-    n_epochs: int
-    action_randomization_scale: float
-    binarized_relevance: bool
-    negative_examples: bool
-    reward_only_top_k: bool
-
     model: CRR_d3rlpy.CRR
 
     _search_space = {
@@ -134,11 +128,12 @@ class CRR(Recommender):
     
     def __init__(
             self, *,
-            k: int, n_epochs: int = 1,
+            top_k: int, n_epochs: int = 1,
             action_randomization_scale: float = 0.,
-            binarized_relevance: bool = True,
-            negative_examples: bool = False,
-            reward_only_top_k: bool = True,
+            use_negative_events: bool = False,
+            rating_based_reward: bool = False,
+            reward_top_k: bool = False,
+            epoch_callback: Optional[Callable[[int, RLRecommender], None]] = None,
 
             # CQL inner params
             actor_learning_rate: float = 3e-4,
@@ -168,15 +163,7 @@ class CRR(Recommender):
             reward_scaler: RewardScalerArg = None,
             **params
     ):
-        super().__init__()
-        self.k = k
-        self.n_epochs = n_epochs
-        self.action_randomization_scale = action_randomization_scale
-        self.binarized_relevance = binarized_relevance
-        self.negative_examples = negative_examples
-        self.reward_only_top_k = reward_only_top_k
-
-        self.model = CRR_d3rlpy.CRR(
+        model = CRR_d3rlpy.CRR(
             actor_learning_rate=actor_learning_rate,
             critic_learning_rate=critic_learning_rate,
             actor_optim_factory=actor_optim_factory,
@@ -205,108 +192,12 @@ class CRR(Recommender):
             **params
         )
 
-    def _predict(
-        self,
-        log: DataFrame,
-        k: int,
-        users: DataFrame,
-        items: DataFrame,
-        user_features: Optional[DataFrame] = None,
-        item_features: Optional[DataFrame] = None,
-        filter_seen_items: bool = True,
-    ) -> DataFrame:
-        if user_features or item_features:
-            message = f'CRR recommender does not support user/item features'
-            self.logger.debug(message)
-
-        users = users.toPandas().to_numpy().flatten()
-        items = items.toPandas().to_numpy().flatten()
-
-        # TODO: consider size-dependent batch prediction instead of by user
-        user_predictions = []
-        for user in users:
-            user_item_pairs = pd.DataFrame({
-                'user_idx': np.repeat(user, len(items)),
-                'item_idx': items
-            })
-            user_item_pairs['relevance'] = self.model.predict(user_item_pairs.to_numpy())
-            user_predictions.append(user_item_pairs)
-
-        prediction = pd.concat(user_predictions)
-
-        # it doesn't explicitly filter seen items and doesn't return top k items
-        # instead, it keeps all predictions as is to be filtered further by base methods
-        return DataPreparator.read_as_spark_df(prediction)
-
-    def _fit(
-        self,
-        log: DataFrame,
-        user_features: Optional[DataFrame] = None,
-        item_features: Optional[DataFrame] = None,
-    ) -> None:
-        train: MDPDataset = self._prepare_data(log)
-        self.model.fit(train, n_epochs=self.n_epochs)
-
-    def _prepare_data(self, log: DataFrame) -> MDPDataset:
-        # TODO: consider making calculations in Spark before converting to pandas
-        user_logs = log.toPandas().sort_values(['user_idx', 'timestamp'], ascending=True)
-
-        rewards = np.zeros(len(user_logs))
-        if not self.binarized_relevance:
-            rewards = user_logs['relevance']
-
-        if self.reward_only_top_k:
-            # reward top-K watched movies with 1, the others - with 0
-            user_top_k_idxs = (
-                user_logs
-                .sort_values(['relevance', 'timestamp'], ascending=[False, True])
-                .groupby('user_idx')
-                .head(self.k)
-                .index
-            )
-            if self.binarized_relevance:
-                rewards[user_top_k_idxs] = 1.0
-            else:
-                rewards[rewards > 0] /= 2
-                rewards[user_top_k_idxs] += 0.5
-
-        if self.negative_examples and self.binarized_relevance:
-            negative_idxs = user_logs[user_logs['relevance'] <= 0].index
-            rewards[negative_idxs] = -1.0
-
-        user_logs['rewards'] = rewards
-
-        # every user has his own episode (the latest item is defined as terminal)
-        user_terminal_idxs = (
-            user_logs[::-1]
-            .groupby('user_idx')
-            .head(1)
-            .index
+        super(CRR, self).__init__(
+            model=model,
+            top_k=top_k, n_epochs=n_epochs,
+            action_randomization_scale=action_randomization_scale,
+            use_negative_events=use_negative_events,
+            rating_based_reward=rating_based_reward,
+            reward_top_k=reward_top_k,
+            epoch_callback=epoch_callback
         )
-        terminals = np.zeros(len(user_logs))
-        terminals[user_terminal_idxs] = 1
-        user_logs['terminals'] = terminals
-
-        # cannot set zero scale as d3rlpy will treat transitions as discrete :/
-        action_randomization_scale = self.action_randomization_scale + 1e-4
-        action_randomization = np.random.randn(len(user_logs)) * action_randomization_scale
-
-        train_dataset = MDPDataset(
-            observations=np.array(user_logs[['user_idx', 'item_idx']]),
-            actions=np.array(
-                user_logs['relevance'] + action_randomization
-            )[:, None],
-            rewards=user_logs['rewards'],
-            terminals=user_logs['terminals']
-        )
-        return train_dataset
-    
-    @property
-    def _init_args(self):
-        args = dict(
-            k=self.k,
-            n_epochs=self.n_epochs,
-            action_randomization_scale=self.action_randomization_scale,
-        )
-        args.update(**self.model.get_params())
-        return args

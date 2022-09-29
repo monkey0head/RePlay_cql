@@ -86,32 +86,7 @@ class RatingsDataset:
 
         test_start = test.agg(sf.min('timestamp')).collect()[0][0]
         raw_train = log.filter(sf.col('timestamp') < test_start).cache()
-
-        # rew_train = (
-        #     log
-        #     .filter(sf.col('timestamp') < test_start)
-        #     .withColumn(
-        #         'relevance',
-        #         sf
-        #         .when(sf.col('relevance') == sf.lit(1.0), sf.lit(-1.0))
-        #         .when(sf.col('relevance') == sf.lit(2.0), sf.lit(-0.3))
-        #         .when(sf.col('relevance') == sf.lit(3.0), sf.lit(0.25))
-        #         .when(sf.col('relevance') == sf.lit(4.0), sf.lit(0.7))
-        #         .when(sf.col('relevance') == sf.lit(5.0), sf.lit(1.0))
-        #     )
-        #     .cache()
-        # )
         test_users = test.select('user_idx').distinct().cache()
-
-        # if self.rating_based_reward:
-        #     # raw relevance transformed into rewards-like
-        #     cql_train = rew_train
-        #     if self.take_positive_events:
-        #         cql_train = rew_train.filter(sf.col('relevance') > 0).cache()
-        # # prepare train data for CQL
-        # else:
-        #     # binarized relevance
-        #     cql_train = pos_binary_train if self.take_positive_events else binary_train
 
         self.binary_train = binary_train
         self.pos_binary_train = pos_binary_train
@@ -246,37 +221,30 @@ class BareRatingsRunner:
         })
 
     def build_models(self, algorithms: list[str]) -> dict[str, tuple[Recommender, DataFrame]]:
-        # def common_builder(ctor, e):
-        #     return ctor(
-        #         use_gpu=self.gpu, k=self.k, n_epochs=e,
-        #         action_randomization_scale=self.action_randomization_scale,
-        #         binarized_relevance=self.binarize_relevance,
-        #         negative_examples=not self.take_positive_events,
-        #         reward_only_top_k=self.reward_top_k
-        #     )
-
-        # if 'cql' in algorithms:
-        #     algorithms_and_trains.update({
-        #         f'CQL_{e}': (common_builder(CQL, e), cql_train)
-        #         for e in self.epochs
-        #     })
-        #
-        # if 'sdac' in algorithms:
-        #     algorithms_and_trains.update({
-        #         f'SDAC_{e}': (common_builder(SDAC, e), cql_train)
-        #         for e in self.epochs
-        #     })
-        #
-        # if 'crr' in algorithms:
-        #     algorithms_and_trains.update({
-        #         f'CRR_{e}': (common_builder(CRR, e), cql_train)
-        #         for e in self.epochs
-        #     })
+        def build_rl_recommender(ctor):
+            n_epochs = self.epochs[-1] if self.epochs else 0
+            return ctor(
+                top_k=self.k, use_gpu=self.gpu, n_epochs=n_epochs,
+                action_randomization_scale=self.action_randomization_scale,
+                use_negative_events=self.use_negative_events,
+                rating_based_reward=self.rating_based_reward,
+                reward_top_k=self.reward_top_k,
+                epoch_callback=None
+            )
 
         algorithms = list(map(str.lower, algorithms))
         models = {}
         for alg in algorithms:
-            if alg == 'ddpg':
+            if alg == 'cql':
+                from replay.models import CQL
+                models['CQL'] = build_rl_recommender(CQL), self.dataset.raw_train
+            elif alg == 'sdac':
+                from replay.models import SDAC
+                models['SDAC'] = build_rl_recommender(SDAC), self.dataset.raw_train
+            elif alg == 'crr':
+                from replay.models import CRR
+                models['CRR'] = build_rl_recommender(CRR), self.dataset.raw_train
+            elif alg == 'ddpg':
                 from replay.models.ddpg import DDPG
                 models['DDPG'] = (
                     DDPG(seed=self.seed, user_num=1000, item_num=2500),
