@@ -35,7 +35,7 @@ class RatingsDataset:
     test: DataFrame
     test_users: DataFrame
 
-    def __init__(self, name: str, test_ratio: float):
+    def __init__(self, name: str, core: int, test_ratio: float):
         self.name, self.category = name.split('.')
 
         if self.name == 'MovieLens':
@@ -61,8 +61,10 @@ class RatingsDataset:
         indexer = Indexer()
         indexer.fit(users=log.select('user_id'), items=log.select('item_id'))
         self.log = indexer.transform(log)
-
         log.unpersist()
+
+        if core > 0:
+            self.filter_rare(min_k_ratings=core)
         self._build_train_test(test_ratio=test_ratio)
 
     def _build_train_test(self, test_ratio: float):
@@ -94,6 +96,36 @@ class RatingsDataset:
         self.test = test
         self.test_users = test_users
 
+    def filter_rare(self, min_k_ratings: int):
+        log = self.log.cache()
+        # take approximate k-core filtering approach iteratively cleaning the data
+        # NB: the sufficient number of iterations found empirically
+        for _ in range(2):
+            for col in ['item_idx', 'user_idx']:
+                filtered_log = self._filter_rares(log, col, min_k_ratings)
+                filtered_log = filtered_log.cache()
+                filtered_log.count()
+
+                log.unpersist()
+                log = filtered_log
+
+        self.log = log
+
+    @staticmethod
+    def _filter_rares(log: DataFrame, col: str, min_k_ratings: int) -> DataFrame:
+        filtered_ids = (
+            log.select(col)
+            .groupBy(col).count()
+            .filter(sf.col('count') >= min_k_ratings)
+            # .select(col)
+            .select(sf.col(col).alias('filtered_id'))
+        )
+        return (
+                log
+                .join(filtered_ids, sf.col(col) == sf.col('filtered_id'), 'inner')
+                .drop('filtered_id')
+        )
+
     @property
     def fullname(self):
         return f'{self.name}.{self.category}'
@@ -119,7 +151,7 @@ class BareRatingsRunner:
 
     def __init__(
             self, *,
-            dataset_name: str,
+            dataset_name: str, core: int,
             partitions: float, memory: float, gpu: int,
             algorithms: list[str], epochs: list[int], label: str,
             k: Union[int, list[int]], test_ratio: float,
@@ -134,7 +166,7 @@ class BareRatingsRunner:
 
         self.gpu = gpu if gpu >= 0 and torch.cuda.is_available() else False
 
-        self.dataset = RatingsDataset(dataset_name, test_ratio=test_ratio)
+        self.dataset = RatingsDataset(dataset_name, core=core, test_ratio=test_ratio)
         self.logger.info(msg='train info:\n\t' + get_log_info(self.dataset.binary_train))
         self.logger.info(msg='test info:\n\t' + get_log_info(self.dataset.test))
         self.print_time('===> Dataset prepared')
@@ -320,6 +352,7 @@ def parse_args():
     parser.add_argument('--algos', dest='algorithms', nargs='*', type=str, default=[])
     parser.add_argument('--gpu', dest='gpu', type=int, default=-1)
     parser.add_argument('--seed', dest='seed', type=int, default=1234)
+    parser.add_argument('--core', dest='core', type=int, default=0)
 
     # experiments
     parser.add_argument('--label', dest='label', default=datetime.datetime.now())
