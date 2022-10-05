@@ -42,7 +42,7 @@ class RLRecommender(Recommender):
             use_negative_events: bool = False,
             rating_based_reward: bool = False,
             reward_top_k: bool = True,
-            epoch_callback: Callable[[int, 'RLRecommender'], None] = None
+            epoch_callback: Callable[[int, 'RLRecommender'], None] = None,
             mdp_type: 'raitings'# 'user_trajectory'
     ):
         super().__init__()
