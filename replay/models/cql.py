@@ -19,7 +19,7 @@ from pyspark.sql import functions as sf, DataFrame
 
 from replay.data_preparator import DataPreparator
 from replay.models import Recommender
-
+from rl_data_preparator import RLDataPreparator
 
 class RLRecommender(Recommender):
     top_k: int
@@ -43,6 +43,7 @@ class RLRecommender(Recommender):
             rating_based_reward: bool = False,
             reward_top_k: bool = True,
             epoch_callback: Callable[[int, 'RLRecommender'], None] = None
+            mdp_type: 'raitings'# 'user_trajectory'
     ):
         super().__init__()
         self.model = model
@@ -52,7 +53,7 @@ class RLRecommender(Recommender):
         self.use_negative_events = use_negative_events
         self.rating_based_reward = rating_based_reward
         self.reward_top_k = reward_top_k
-
+        self.mdp_type = mdp_type
         self.epoch_callback = epoch_callback
 
     def _predict(
@@ -113,8 +114,19 @@ class RLRecommender(Recommender):
         4.0: 1.0,
         5.0: 1.0,
     }
-
-    def _prepare_data(self, log: DataFrame) -> MDPDataset:
+    
+    def __trajectory_preparator(self, log: DataFrame) -> MDPDataset:
+        preparator_retail = RLDataPreparator(data.sort_values(['user_id','ts']))
+        observations, actions, rewards, termaits = preparator_retail.prepare_data(count_to_use = 1000)
+         train_dataset = MDPDataset(
+            observations=observations,
+            actions=actions,
+            rewards=rewards,
+            terminals=termaits
+        )
+        return train_dataset
+    
+    def __scorelike_preparator(self, log: DataFrame) -> MDPDataset:
         if not self.use_negative_events:
             # remove negative events
             log = log.filter(sf.col('relevance') >= sf.lit(3.0))
@@ -166,6 +178,13 @@ class RLRecommender(Recommender):
             rewards=user_logs['rewards'],
             terminals=user_logs['terminals']
         )
+        return train_dataset
+    
+    def _prepare_data(self, log: DataFrame) -> MDPDataset:
+        if self.mdp_type == 'user_trajectory':
+            train_dataset = self.__trajectory_preparator(log)
+        else:
+            train_dataset = self.__scorelike_preparator(log)        
         return train_dataset
 
     @property

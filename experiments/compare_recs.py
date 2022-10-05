@@ -37,13 +37,16 @@ class RatingsDataset:
 
     def __init__(self, name: str, core: int, test_ratio: float):
         self.name, self.category = name.split('.')
-
+       # print(self.name)
         if self.name == 'MovieLens':
             from rs_datasets import MovieLens
             ds = MovieLens(version=self.category)
         elif self.name == 'Amazon':
             from rs_datasets import Amazon
             ds = Amazon(category=self.category)
+        elif self.name == 'RetailRocket':            
+            from rs_datasets import RetailRocket
+            ds = RetailRocket()
         else:
             raise KeyError()
 
@@ -261,7 +264,8 @@ class BareRatingsRunner:
                 use_negative_events=self.use_negative_events,
                 rating_based_reward=self.rating_based_reward,
                 reward_top_k=self.reward_top_k,
-                epoch_callback=None
+                epoch_callback=None,
+                mdp_type ='user_trajectory'
             )
 
         algorithms = list(map(str.lower, algorithms))
