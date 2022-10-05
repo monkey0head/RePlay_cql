@@ -56,7 +56,10 @@ class RatingsDataset:
             'relevance': 'rating',
             'timestamp': 'timestamp'
         }
-        pd_log = ds.ratings
+        if self.name == 'RetailRocket': 
+            pd_log = ds.log
+        else:
+            pd_log = ds.ratings
 
         data_preparator = DataPreparator()
         log = data_preparator.transform(columns_mapping=col_mapping, data=pd_log)
