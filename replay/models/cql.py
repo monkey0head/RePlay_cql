@@ -118,7 +118,7 @@ class RLRecommender(Recommender):
     def __trajectory_preparator(self, log: DataFrame) -> MDPDataset:
         preparator_retail = RLDataPreparator(data.sort_values(['user_id','ts']))
         observations, actions, rewards, termaits = preparator_retail.prepare_data(count_to_use = 1000)
-         train_dataset = MDPDataset(
+        train_dataset = MDPDataset(
             observations=observations,
             actions=actions,
             rewards=rewards,
