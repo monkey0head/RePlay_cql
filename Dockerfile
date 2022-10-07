@@ -20,14 +20,14 @@ RUN apt-get update; \
 # set zsh as default shell
 SHELL ["/bin/zsh", "-c"]
 
-# Install Java 8 SDK
+# Install Java 11 (or 8) SDK
 RUN mkdir -p /etc/apt/keyrings; \
     wget -O - https://packages.adoptium.net/artifactory/api/gpg/key/public \
         | tee /etc/apt/keyrings/adoptium.asc; \
     echo "deb [signed-by=/etc/apt/keyrings/adoptium.asc] https://packages.adoptium.net/artifactory/deb $(awk -F= '/^VERSION_CODENAME/{print$2}' /etc/os-release) main" \
         | tee /etc/apt/sources.list.d/adoptium.list; \
     apt-get update; \
-    apt-get install -y temurin-8-jdk; \
+    apt-get install -y temurin-11-jdk; \
     rm -rf /var/lib/apt/lists/*;
 
 # Install oh-my-zsh and mambaforge as environment management
@@ -45,10 +45,11 @@ WORKDIR /app/replay
 
 # Prepare conda env
 RUN mamba init zsh; \
-    echo "alias cn='mamba'" >> /root/.zshrc; \
     source /root/.zshrc; \
-    mamba create --name offrl python=3.9 pip wheel poetry cython -y; \
-    mamba activate offrl; \
+    mamba create --name recsys python=3.9 pip wheel poetry cython -y; \
+    mamba activate recsys; \
+    # auto activate env on login
+    echo "mamba activate recsys" >> /root/.zshrc; \
     mamba install requests pypandoc optuna tabulate -y; \
     pip install datatable; \
     poetry install; \
