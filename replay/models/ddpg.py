@@ -192,10 +192,10 @@ class OUNoise:
         )
         if self.noise_type == "ou":
             ou_state = self.evolve_state()
-            return torch.from_numpy([action + ou_state]).float()
+            return torch.from_numpy(np.array([action + ou_state])).float()
         elif self.noise_type == "gauss":
             return torch.from_numpy(
-                [self.sigma * np.random.randn(self.action_dim)]
+                np.array([self.sigma * np.random.randn(self.action_dim)])
             ).float()
         else:
             raise ValueError("noise_type must be one of ['ou', 'gauss']")
@@ -361,7 +361,7 @@ class Env:
         self.available_items[::2] = self.related_items
         self.available_items[1::2] = self.nonrelated_items
 
-        return torch.from_numpy([self.user_id]), torch.from_numpy(
+        return torch.from_numpy(np.array([self.user_id])), torch.from_numpy(
             self.memory[[self.user_id], :]
         )
 
@@ -395,7 +395,7 @@ class Env:
             )
 
         return (
-            torch.from_numpy([self.user_id]),
+            torch.from_numpy(np.array([self.user_id])),
             torch.from_numpy(self.memory[[self.user_id], :]),
             reward,
             0,
@@ -851,7 +851,7 @@ class DDPG(TorchRecommender):
                 action = self.model.get_action(
                     action_emb,
                     torch.from_numpy(
-                        self.model.environment.available_items
+                        np.array(self.model.environment.available_items)
                     ).long(),
                 )
                 user, memory, reward, _ = self.model.environment.step(
