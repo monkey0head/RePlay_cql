@@ -643,24 +643,18 @@ class DDPG(TorchRecommender):
         item_num = data["item_idx"].max() + 1
 
         train_data = data.sample(frac=0.9, random_state=16)
+        test_data = data.drop(train_data.index)
         appropriate_users = (
             train_data["user_idx"]
             .value_counts()[train_data["user_idx"].value_counts() > 10]
             .index
         )
-        test_data = data.drop(train_data.index).values.tolist()
-        train_data = train_data.values.tolist()
 
-        train_mat = defaultdict(float)
-        test_mat = defaultdict(float)
-        for user, item, rel in train_data:
-            train_mat[user, item] = rel
-        for user, item, rel in test_data:
-            test_mat[user, item] = rel
         train_matrix = sp.dok_matrix((user_num, item_num), dtype=np.float32)
-        dict.update(train_matrix, train_mat)
+        train_matrix[train_data["user_idx"], train_data["item_idx"]] = train_data["relevance"]
+
         test_matrix = sp.dok_matrix((user_num, item_num), dtype=np.float32)
-        dict.update(test_matrix, test_mat)
+        test_matrix[test_data["user_idx"], test_data["item_idx"]] = test_data["relevance"]
 
         return (
             train_matrix,
