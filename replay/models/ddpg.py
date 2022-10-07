@@ -192,12 +192,13 @@ class OUNoise:
         )
         if self.noise_type == "ou":
             ou_state = self.evolve_state()
-            noisy_action = np.array([action + ou_state])
+            return torch.from_numpy([action + ou_state]).float()
         elif self.noise_type == "gauss":
-            noisy_action = np.array([self.sigma * np.random.randn(self.action_dim)])
+            return torch.from_numpy(
+                [self.sigma * np.random.randn(self.action_dim)]
+            ).float()
         else:
             raise ValueError("noise_type must be one of ['ou', 'gauss']")
-        return torch.from_numpy(noisy_action).float()
 
 
 class ActorDRR(nn.Module):
@@ -319,6 +320,7 @@ class Env:
         :param matrix: sparse matrix with users-item ratings
         :param user_id: users_id number
         :param related_items: relevant items for user_id
+        :param nonrelated_items: non-relevant items for user_id
         :param num_rele: number of related_items
         :param available_items: non-seen items
         """
@@ -330,6 +332,7 @@ class Env:
         self.matrix = np.ones([user_num, item_num])
         self.user_id = 0
         self.related_items = np.arange(item_num)
+        self.nonrelated_items = np.arange(item_num)
         self.num_rele = len(self.related_items)
         self.available_items = list(np.zeros(self.num_rele * 2))
 
@@ -358,8 +361,7 @@ class Env:
         self.available_items[::2] = self.related_items
         self.available_items[1::2] = self.nonrelated_items
 
-        user_id_ = np.array([self.user_id])
-        return torch.from_numpy(user_id_), torch.from_numpy(
+        return torch.from_numpy([self.user_id]), torch.from_numpy(
             self.memory[[self.user_id], :]
         )
 
@@ -392,9 +394,8 @@ class Env:
                 np.array([reward]),
             )
 
-        user_id_ = np.array([self.user_id])
         return (
-            torch.from_numpy(user_id_),
+            torch.from_numpy([self.user_id]),
             torch.from_numpy(self.memory[[self.user_id], :]),
             reward,
             0,
@@ -688,7 +689,7 @@ class DDPG(TorchRecommender):
             return np.reciprocal(np.log2(index + 2))
         return 0
 
-    # pylint: disable=arguments-differ,too-many-locals
+    # pylint: disable=arguments-differ,too-many-locals,arguments-renamed
     def _run_train_step(
         self,
         policy_optimizer,
@@ -853,10 +854,11 @@ class DDPG(TorchRecommender):
                 action_emb = self.ou_noise.get_action(
                     to_np(action_emb)[0], user_step
                 )
-                available_items = np.array(self.model.environment.available_items)
                 action = self.model.get_action(
                     action_emb,
-                    torch.from_numpy(available_items).long(),
+                    torch.from_numpy(
+                        self.model.environment.available_items
+                    ).long(),
                 )
                 user, memory, reward, _ = self.model.environment.step(
                     action, action_emb, self.replay_buffer
