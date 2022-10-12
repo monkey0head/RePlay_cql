@@ -54,6 +54,7 @@ class SDAC(RLRecommender):
             scaler: ScalerArg = None,
             action_scaler: ActionScalerArg = None,
             reward_scaler: RewardScalerArg = None,
+            mdp_type = 'user_trajectory'
             **params: Any
     ):
         model = sdac_impl.SDAC(
@@ -88,5 +89,6 @@ class SDAC(RLRecommender):
             use_negative_events=use_negative_events,
             rating_based_reward=rating_based_reward,
             reward_top_k=reward_top_k,
-            epoch_callback=epoch_callback
+            epoch_callback=epoch_callback,
+            mdp_type = mdp_type
         )
