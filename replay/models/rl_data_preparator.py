@@ -28,13 +28,13 @@ def trajectory4user(user_data, item_mapping, use_onehot = True, f_obs_modfier = 
     vector_lenghts = len(item_mapping)
     for i in range(len(user_data)-1):
         #print(user_data['item_id'].values[:i+1])
-        obs_values = list(map(lambda item: item_mapping[item], user_data['item_id'].values[:i+1]))    
+        obs_values = list(map(lambda item: item_mapping[item], user_data['item_idx'].values[:i+1]))    
         if use_onehot:
             observation = np.zeros(vector_lenghts)
             observation[obs_values] = 1
         else:
             observation = obs_values
-        action = user_data['item_id'].values[i+1]
+        action = user_data['item_idx'].values[i+1]
         user_action = user_data['event'].values[i+1]
         if user_action == 'view':
             reward = 0.5
@@ -56,14 +56,14 @@ def df2trajectories(data, item_mapping, use_onehot = True):
     rewards = []
     termaits = []
     
-    users = list(set(data['user_id']))
-    items_count = data['item_id'].max()
-    min_item_vaue = data['item_id'].min()
+    users = list(set(data['user_idx']))
+    items_count = data['item_idx'].max()
+    min_item_vaue = data['item_idx'].min()
    # print(min_item_vaue)
     for user_id in users:
-        user_information = data[data['user_id'] == user_id]
+        user_information = data[data['user_idx'] == user_id]
         u_observations,u_actions,u_rewards,u_termaits =\
-                trajectory4user(data[data['user_id'] == user_id], item_mapping = item_mapping,
+                trajectory4user(data[data['user_idx'] == user_id], item_mapping = item_mapping,
                                 use_onehot = use_onehot)
         observations += u_observations
         actions += u_actions
@@ -83,18 +83,18 @@ class RLDataPreparator():
     
     def prepare_data(self, count_to_use = 1000, group_range = (5,10)):
         ### filter users
-        users = list(self.data['user_id'])
+        users = list(self.data['user_idx'])
         user_filter, max_v = mapping_via_most_common(users,count_to_use = count_to_use, group_range = group_range )
        # print(max_v)
         best_users = list(user_filter.keys())
       #  print(best_users)
-        active_filter = self.data['user_id'].isin(best_users)
+        active_filter = self.data['user_idx'].isin(best_users)
        # print(active_filter)
         active_data = self.data[active_filter]
         
        # print(active_data)
         ### filter items
-        active_items = list(active_data['item_id'])
+        active_items = list(active_data['item_idx'])
         item_mapping,_ = mapping_via_most_common(active_items, -1)
         
         observations, actions, rewards, termaits = df2trajectories(active_data, item_mapping,
