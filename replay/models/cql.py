@@ -117,9 +117,9 @@ class RLRecommender(Recommender):
     
     def __trajectory_preparator(self, log: DataFrame) -> MDPDataset:
         #raise Exception("Before sort!")
-        print(log.sort(['user_id','ts'], inplace=True))
+        print(log.toPandas().sort_values(['user_id','ts'], ascending=True))
         raise Exception("Before sort!")
-        preparator_retail = RLDataPreparator(log.sort(['user_id','ts'], inplace=True))
+        preparator_retail = RLDataPreparator(log.toPandas().sort_values(['user_id','ts'], ascending=True))
         raise Exception("Not in place!")
         observations, actions, rewards, termaits = preparator_retail.prepare_data(count_to_use = 1000)
         train_dataset = MDPDataset(
