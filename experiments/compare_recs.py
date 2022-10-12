@@ -63,7 +63,7 @@ class RatingsDataset:
 
         data_preparator = DataPreparator()
         log = data_preparator.transform(columns_mapping=col_mapping, data=pd_log)
-
+        raise Exception(log)
         indexer = Indexer()
         indexer.fit(users=log.select('user_id'), items=log.select('item_id'))
         self.log = indexer.transform(log)
@@ -281,7 +281,7 @@ class BareRatingsRunner:
             elif alg == 'sdac':
                 from replay.models.sdac.sdac import SDAC
               #  raise Exception(self.dataset.log)
-                models['SDAC'] = build_rl_recommender(SDAC), self.dataset.log
+                models['SDAC'] = build_rl_recommender(SDAC), self.dataset
             elif alg == 'crr':
                 from replay.models.crr import CRR
                 models['CRR'] = build_rl_recommender(CRR), self.dataset.raw_train
