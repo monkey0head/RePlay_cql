@@ -124,6 +124,7 @@ class RLRecommender(Recommender):
             rewards=rewards,
             terminals=termaits
         )
+        print("Hello!")
         return train_dataset
     
     def __scorelike_preparator(self, log: DataFrame) -> MDPDataset:
