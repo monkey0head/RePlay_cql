@@ -357,7 +357,7 @@ class BaseRecommender(ABC):
         self.fit_items = sf.broadcast(items)
         self._num_users = self.fit_users.count()
         self._num_items = self.fit_items.count()
-       # raise Exception(log)
+        raise Exception(self.fit_users)
         self._user_dim_size = (
             self.fit_users.agg({"user_idx": "max"}).collect()[0][0] + 1
         )
