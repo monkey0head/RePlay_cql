@@ -35,7 +35,7 @@ def trajectory4user(user_data, item_mapping, use_onehot = True, f_obs_modfier = 
         else:
             observation = obs_values
         action = user_data['item_id'].values[i+1]
-        user_action = user_data['event'].values[i+1]
+        user_action = user_data['relevance'].values[i+1]
         if user_action == 'view':
             reward = 0.5
         elif user_action == 'addtocart':
