@@ -54,7 +54,7 @@ class SDAC(RLRecommender):
             scaler: ScalerArg = None,
             action_scaler: ActionScalerArg = None,
             reward_scaler: RewardScalerArg = None,
-            mdp_type = 'user_trajectory'
+            mdp_type = 'user_trajectory',
             **params: Any
     ):
         model = sdac_impl.SDAC(
