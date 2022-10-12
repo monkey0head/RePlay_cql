@@ -280,7 +280,7 @@ class BareRatingsRunner:
                 models['CQL'] = build_rl_recommender(CQL), self.dataset.raw_train
             elif alg == 'sdac':
                 from replay.models.sdac.sdac import SDAC
-                raise Excption(self.dataset.log)
+              #  raise Exception(self.dataset.log)
                 models['SDAC'] = build_rl_recommender(SDAC), self.dataset.log
             elif alg == 'crr':
                 from replay.models.crr import CRR
