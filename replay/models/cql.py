@@ -116,7 +116,7 @@ class RLRecommender(Recommender):
     }
     
     def __trajectory_preparator(self, log: DataFrame) -> MDPDataset:
-        #raise Exception("Before sort!")
+        raise Exception(log.toPandas())
         print(log.toPandas().sort_values(['user_id','ts'], ascending=True))
         raise Exception("Before sort!")
         preparator_retail = RLDataPreparator(log.toPandas().sort_values(['user_id','ts'], ascending=True))
