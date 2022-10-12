@@ -63,7 +63,7 @@ class RatingsDataset:
 
         data_preparator = DataPreparator()
         log = data_preparator.transform(columns_mapping=col_mapping, data=pd_log)
-        raise Exception(log)
+        raise Exception(log.collect())
         indexer = Indexer()
         indexer.fit(users=log.select('user_id'), items=log.select('item_id'))
         self.log = indexer.transform(log)
