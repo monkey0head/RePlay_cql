@@ -120,7 +120,7 @@ class RLRecommender(Recommender):
        # print(log.toPandas().sort_values(['user_idx','ts'], ascending=True))
       #  raise Exception("Before sort!")
         preparator_retail = RLDataPreparator(log.toPandas().sort_values(['user_idx','ts'], ascending=True))
-        raise Exception("Not in place!")
+       # raise Exception("Not in place!")
         observations, actions, rewards, termaits = preparator_retail.prepare_data(count_to_use = 1000)
         train_dataset = MDPDataset(
             observations=observations,
