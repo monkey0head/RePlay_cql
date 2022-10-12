@@ -123,10 +123,10 @@ class RLRecommender(Recommender):
        # raise Exception("Not in place!")
         observations, actions, rewards, termaits = preparator_retail.prepare_data(count_to_use = 1000)
         train_dataset = MDPDataset(
-            observations=observations,
-            actions=actions,
-            rewards=rewards,
-            terminals=termaits
+            observations=np.asarray(observations),
+            actions=np.asarray(actions),
+            rewards=np.asarray(rewards),
+            terminals=np.asarray(termaits)
         )
         print("Hello!")
         return train_dataset
