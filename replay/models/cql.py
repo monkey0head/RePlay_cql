@@ -117,6 +117,7 @@ class RLRecommender(Recommender):
     
     def __trajectory_preparator(self, log: DataFrame) -> MDPDataset:
         preparator_retail = RLDataPreparator(log.sort(['user_id','ts']))
+        raise Exception("Not in place!")
         observations, actions, rewards, termaits = preparator_retail.prepare_data(count_to_use = 1000)
         train_dataset = MDPDataset(
             observations=observations,
