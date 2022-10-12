@@ -102,6 +102,8 @@ class RLDataPreparator():
         self.trajectories = observations, actions, rewards, termaits
         
         self.save(self.trajectories, self.dataset_name+f"{count_to_use}_GR_{group_range[0]}_{group_range[1]}")
+        
+        raise Exception(len(observation), len(actions),len(rewards),len(termaits))
         #return
         return observations, actions, rewards, termaits
     
