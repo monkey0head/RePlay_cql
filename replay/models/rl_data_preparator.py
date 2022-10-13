@@ -83,21 +83,24 @@ class RLDataPreparator():
         pass
     
     def prepare_data(self, count_to_use = 1000, group_range = (5,10)):
+        if self.trajectories is None
         ### filter users
-        users = list(self.data['user_idx'])
-        user_filter, max_v = mapping_via_most_common(users,count_to_use = count_to_use, group_range = group_range )
-        best_users = list(user_filter.keys())
-        active_filter = self.data['user_idx'].isin(best_users)
-        active_data = self.data[active_filter]
-        
-       # print(active_data)
-        ### filter items
-        active_items = list(active_data['item_idx'])
-        item_mapping,_ = mapping_via_most_common(active_items, -1)        
-        observations, actions, rewards, termaits = df2trajectories(active_data, item_mapping,
-                                                                   use_onehot = self.onehot)
-        self.trajectories = observations, actions, rewards, termaits        
-        self.save(self.trajectories, self.dataset_name+f"{count_to_use}_GR_{group_range[0]}_{group_range[1]}")
+            users = list(self.data['user_idx'])
+            user_filter, max_v = mapping_via_most_common(users,count_to_use = count_to_use, group_range = group_range )
+            best_users = list(user_filter.keys())
+            active_filter = self.data['user_idx'].isin(best_users)
+            active_data = self.data[active_filter]
+
+           # print(active_data)
+            ### filter items
+            active_items = list(active_data['item_idx'])
+            item_mapping,_ = mapping_via_most_common(active_items, -1)        
+            observations, actions, rewards, termaits = df2trajectories(active_data, item_mapping,
+                                                                       use_onehot = self.onehot)
+            self.trajectories = observations, actions, rewards, termaits        
+            self.save(self.trajectories, self.dataset_name+f"{count_to_use}_GR_{group_range[0]}_{group_range[1]}")
+        else:
+            return self.trajectories
 
         return observations, actions, rewards, termaits
     
