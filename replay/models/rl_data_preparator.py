@@ -41,8 +41,11 @@ def trajectory4user(user_data, item_mapping, use_onehot = True, f_obs_modfier = 
         action = item_mapping[user_data['item_idx'].values[i+1]]
         action_onehot = np.zeros(vector_lenghts+1)
         action_onehot[action] = 1
-        action = action_onehot[:]
         
+        action = action_onehot[:]
+        action = action.astype(float)
+        
+        raise Exception(action)
         user_action = user_data['event'].values[i+1]
         if user_action == 'view':
             reward = 0.5
