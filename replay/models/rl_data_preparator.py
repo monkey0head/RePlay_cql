@@ -60,7 +60,7 @@ def df2trajectories(data, item_mapping, use_onehot = True):
     users = list(set(data['user_idx']))
     items_count = data['item_idx'].max()
     min_item_vaue = data['item_idx'].min()
-   # print(min_item_vaue)
+
     for user_id in users:
         user_information = data[data['user_idx'] == user_id]
         u_observations,u_actions,u_rewards,u_termaits =\
@@ -75,7 +75,7 @@ def df2trajectories(data, item_mapping, use_onehot = True):
 
 
 class RLDataPreparator():    
-    def __init__(self, data = None, load_from_file = "data1000_GR_5_10.pickle", dataset_name = "data", onehot = True):
+    def __init__(self, data = None, load_from_file = "data1000_GR_5_10", dataset_name = "data", onehot = True):
         self.data = data
         self.trajectories =None if not load_from_file else self.load(load_from_file)
         self.dataset_name = dataset_name
