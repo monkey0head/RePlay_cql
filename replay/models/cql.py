@@ -124,7 +124,7 @@ class RLRecommender(Recommender):
         observations, actions, rewards, termaits = preparator_retail.prepare_data(count_to_use = 1000)
         train_dataset = MDPDataset(
             observations=np.asarray(observations),
-            actions=np.asarray(actions),
+            actions=np.asarray(actions)/1.,
             rewards=np.asarray(rewards),
             terminals=np.asarray(termaits)
         )
