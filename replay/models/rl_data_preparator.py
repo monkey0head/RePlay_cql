@@ -8,7 +8,10 @@ from collections import Counter
 def mapping_via_most_common(items, count_to_use = 10, group_range = None):
     groups = Counter(items).most_common()
     if group_range is None:
-        items_to_use = groups[:count_to_use]
+        if count_to_use == -1:
+            items_to_use = groups[:]
+        else:
+            items_to_use = groups[:count_to_use]
     else:
         items_to_use = [item for item in groups if group_range[0]<=item[1]<=group_range[1]]
         np.random.shuffle(items_to_use)
@@ -93,7 +96,9 @@ class RLDataPreparator():
             user_filter, max_v = mapping_via_most_common(users,count_to_use = count_to_use, group_range = group_range )
             best_users = list(user_filter.keys())
             active_filter = self.data['user_idx'].isin(best_users)
+            print(len(active_filter))
             active_data = self.data[active_filter]
+            print(len(active_data))
 
            # print(active_data)
             ### filter items
