@@ -34,12 +34,12 @@ def trajectory4user(user_data, item_mapping, use_onehot = True, f_obs_modfier = 
         #print(user_data['item_id'].values[:i+1])
         obs_values = list(map(lambda item: item_mapping[item], user_data['item_idx'].values[:i+1]))    
         if use_onehot:
-            observation = np.zeros(vector_lenghts)
+            observation = np.zeros(vector_lenghts+1)
             observation[obs_values] = 1
         else:
             observation = obs_values
         action = item_mapping[user_data['item_idx'].values[i+1]]
-        action_onehot = np.zeros(action)
+        action_onehot = np.zeros(vector_lenghts+1)
         action_onehot[action] = 1
         action = action_onehot[:]
         
