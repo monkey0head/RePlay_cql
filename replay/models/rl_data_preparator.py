@@ -1,6 +1,7 @@
 import os
 import pickle
 import numpy as np
+import glob
 from collections import Counter
 
 
@@ -74,7 +75,7 @@ def df2trajectories(data, item_mapping, use_onehot = True):
 
 
 class RLDataPreparator():    
-    def __init__(self, data = None, load_from_file = None, dataset_name = "data", onehot = True):
+    def __init__(self, data = None, load_from_file = "data1000_GR_5_10.pickle", dataset_name = "data", onehot = True):
         self.data = data
         self.trajectories =None if not load_from_file else self.load(load_from_file)
         self.dataset_name = dataset_name
@@ -85,26 +86,19 @@ class RLDataPreparator():
         ### filter users
         users = list(self.data['user_idx'])
         user_filter, max_v = mapping_via_most_common(users,count_to_use = count_to_use, group_range = group_range )
-       # print(max_v)
         best_users = list(user_filter.keys())
-      #  print(best_users)
         active_filter = self.data['user_idx'].isin(best_users)
-       # print(active_filter)
         active_data = self.data[active_filter]
         
        # print(active_data)
         ### filter items
         active_items = list(active_data['item_idx'])
-        item_mapping,_ = mapping_via_most_common(active_items, -1)
-        
+        item_mapping,_ = mapping_via_most_common(active_items, -1)        
         observations, actions, rewards, termaits = df2trajectories(active_data, item_mapping,
                                                                    use_onehot = self.onehot)
-        self.trajectories = observations, actions, rewards, termaits
-        
+        self.trajectories = observations, actions, rewards, termaits        
         self.save(self.trajectories, self.dataset_name+f"{count_to_use}_GR_{group_range[0]}_{group_range[1]}")
-        
-      #  raise Exception(len(observation), len(actions),len(rewards),len(termaits))
-        #return
+
         return observations, actions, rewards, termaits
     
     def save(self, trajectories, file_name):
