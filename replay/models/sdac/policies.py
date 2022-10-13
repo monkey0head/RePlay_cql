@@ -35,7 +35,7 @@ class GumbelPolicy(CategoricalPolicy):
 
         dist = self.dist(x)
         if deterministic:
-            picked_actions = dist.hard_sample().argmax(dim=1)
+            picked_actions = dist.hard_sample()#.argmax(dim=1)
         else:
             picked_actions, log_prob = dist.sample_with_log_prob()
             # picked_actions = picked_actions.argmax(dim=1)
@@ -55,7 +55,7 @@ class GumbelPolicy(CategoricalPolicy):
 
     def best_action(self, x: torch.Tensor) -> torch.Tensor:
         out = self.forward(x, deterministic=True)
-        # out = torch.argmax(out, dim=1)
+        out = torch.argmax(out, dim=1)
         return cast(torch.Tensor, out)
 
     def sample_n_with_log_prob(
