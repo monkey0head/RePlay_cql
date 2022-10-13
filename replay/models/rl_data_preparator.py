@@ -35,7 +35,11 @@ def trajectory4user(user_data, item_mapping, use_onehot = True, f_obs_modfier = 
             observation[obs_values] = 1
         else:
             observation = obs_values
-        action = user_data['item_idx'].values[i+1]
+        action = item_mapping[user_data['item_idx'].values[i+1]]
+        action_onehot = np.zeros(action)
+        action_onehot[action] = 1
+        action = action_onehot[:]
+        
         user_action = user_data['event'].values[i+1]
         if user_action == 'view':
             reward = 0.5
@@ -75,7 +79,7 @@ def df2trajectories(data, item_mapping, use_onehot = True):
 
 
 class RLDataPreparator():    
-    def __init__(self, data = None, load_from_file = "data1000_GR_5_10", dataset_name = "data", onehot = True):
+    def __init__(self, data = None, load_from_file =None, dataset_name = "data", onehot = True):
         self.data = data
         self.trajectories =None if not load_from_file else self.load(load_from_file)
         self.dataset_name = dataset_name
