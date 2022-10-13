@@ -83,7 +83,7 @@ class RLDataPreparator():
         pass
     
     def prepare_data(self, count_to_use = 1000, group_range = (5,10)):
-        if self.trajectories is None
+        if self.trajectories is None:
         ### filter users
             users = list(self.data['user_idx'])
             user_filter, max_v = mapping_via_most_common(users,count_to_use = count_to_use, group_range = group_range )
