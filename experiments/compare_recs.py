@@ -247,6 +247,8 @@ class BareRatingsRunner:
         fit_time = time.time() - start_time
 
         pred = model.predict(log=train, k=top_k, users=test_users).cache()
+        
+        raise Exceptions(pred)
         predict_time = time.time() - start_time - fit_time
 
         experiment.add_result(name, pred)
