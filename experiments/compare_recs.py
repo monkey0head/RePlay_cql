@@ -205,7 +205,7 @@ class BareRatingsRunner:
 
             self.fit_predict_add_res(
                 model_name, model, self.experiment,
-                train=train, top_k=self.k, test_users=self.dataset.log['user_idx'].values[:10]
+                train=train, top_k=self.k, test_users=self.dataset.log
             )
             print(
                 self.experiment.results[[

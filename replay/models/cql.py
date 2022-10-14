@@ -73,8 +73,8 @@ class RLRecommender(Recommender):
     ) -> DataFrame:
         active_users_idx = self.trajectories[-1]
         
-        users = users.toPandas().to_numpy().flatten()
-        items = items.toPandas().to_numpy().flatten()
+        users = users.toPandas().to_numpy().flatten()['user_idx'][:10]
+       # items = items.toPandas().to_numpy().flatten()['user_idx'][:10]
         user_predictions = []
         
         for user in users:
