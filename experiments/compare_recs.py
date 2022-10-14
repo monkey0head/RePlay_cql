@@ -53,9 +53,14 @@ class RatingsDataset:
         col_mapping = {
             'user_id': 'user_id',
             'item_id': 'item_id',
+            'relevance' : 'relevance'
         }
         if self.name == 'RetailRocket': 
             pd_log = ds.log
+            pd_log['relevance'] =  pd_log['event']
+            pd_log['relevance'][pd_log['event'] == 'view'] = 0.5
+            pd_log['relevance'][pd_log['event'] == 'addtocart'] = 1
+            pd_log['relevance'][pd_log['event'] == 'transaction'] = 1.5
         else:
             pd_log = ds.ratings
 
