@@ -24,7 +24,8 @@ def mapping_via_most_common(items, count_to_use = 10, group_range = None):
 
 
 def trajectory4user(user_data, item_mapping, use_onehot = True, f_obs_modfier = None):
-    #print(user_data)    
+    #print(user_data)  
+    
     observations = []
     rewards = []
     actions = []
@@ -66,7 +67,7 @@ def df2trajectories(data, item_mapping, use_onehot = True):
     actions = []
     rewards = []
     termaits = []
-    
+    #users = []
     users = list(set(data['user_idx']))
     items_count = data['item_idx'].max()
     min_item_vaue = data['item_idx'].min()
@@ -80,7 +81,7 @@ def df2trajectories(data, item_mapping, use_onehot = True):
         actions += u_actions
         rewards += u_rewards
         termaits += u_termaits
-    return observations, actions, rewards, termaits
+    return observations, actions, rewards, termaits,users
 
 
 
@@ -107,14 +108,14 @@ class RLDataPreparator():
             ### filter items
             active_items = list(active_data['item_idx'])
             item_mapping,_ = mapping_via_most_common(active_items, -1)        
-            observations, actions, rewards, termaits = df2trajectories(active_data, item_mapping,
+            observations, actions, rewards, termaits, users = df2trajectories(active_data, item_mapping,
                                                                        use_onehot = self.onehot)
-            self.trajectories = observations, actions, rewards, termaits        
+            self.trajectories = observations, actions, rewards, termaits, users        
             self.save(self.trajectories, self.dataset_name+f"{count_to_use}_GR_{group_range[0]}_{group_range[1]}")
         else:
             return self.trajectories
 
-        return observations, actions, rewards, termaits
+        return observations, actions, rewards, termaits, users
     
     def save(self, trajectories, file_name):
         os.makedirs("./data", exist_ok=True)
@@ -133,7 +134,7 @@ if __name__ == "__main__":
     from rs_datasets import RetailRocket
     data = RetailRocket()
     preparator_retail = RLDataPreparator(data.log.sort_values(['user_id','ts']))
-    obs, _, _, _ = preparator_retail.prepare_data(count_to_use = 1000)
+    obs, _, _, _,_ = preparator_retail.prepare_data(count_to_use = 1000)
     
     preparator_retail = RLDataPreparator(load_from_file = 'data50_GR_5_10')
     
