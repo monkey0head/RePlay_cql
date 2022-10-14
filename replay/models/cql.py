@@ -21,6 +21,14 @@ from replay.data_preparator import DataPreparator
 from replay.models import Recommender
 from replay.models.rl_data_preparator import RLDataPreparator
 
+def generate_top(model, first_obs, K=5):
+    obs = first_obs.copy()
+    for i in range(K):
+        next_element = model.predict([obs])
+        obs += next_element.ravel()
+    elements = np.where(obs!=0)
+    return elements
+
 class RLRecommender(Recommender):
     top_k: int
     n_epochs: int
@@ -55,6 +63,32 @@ class RLRecommender(Recommender):
         self.reward_top_k = reward_top_k
         self.mdp_type = mdp_type
         self.epoch_callback = epoch_callback
+        
+    def _predict_for_trajectories(
+        self,
+        k: int,
+        users: DataFrame,
+        items: DataFrame,
+    ) -> DataFrame:
+        active_users_idx = self.trajectories[-1]
+        
+        users = users.toPandas().to_numpy().flatten()
+        items = items.toPandas().to_numpy().flatten()
+        
+        for user in users:
+            observation_idx = np.where(active_users_idx == user)
+            user_observations = self.trajectories[0][observation_idx][0]
+            user_predictions = []
+            top_k_predicted_items = generate_top(self.model, user_observations, K=5)
+            user_item_pairs = pd.DataFrame({
+                'user_idx': np.repeat(user, k),
+                'item_idx': top_k_predicted_items,
+                'relevance':np.repeat(user, 0.5)
+            })
+            user_predictions.append(user_item_pairs)
+        prediction = pd.concat(user_predictions)
+        return DataPreparator.read_as_spark_df(prediction)    
+        
 
     def _predict(
         self,
@@ -69,11 +103,14 @@ class RLRecommender(Recommender):
         if user_features or item_features:
             message = f'RL recommender does not support user/item features'
             self.logger.debug(message)
-
+        if self.mdp_type == 'user_trajectory':
+            return self._predict_for_trajectories(k, users, items)
+        
         users = users.toPandas().to_numpy().flatten()
         items = items.toPandas().to_numpy().flatten()
 
         # TODO: consider size-dependent batch prediction instead of by user
+        raise Exception(len(users))
         user_predictions = []
         for user in users:
             user_item_pairs = pd.DataFrame({
@@ -121,7 +158,7 @@ class RLRecommender(Recommender):
       #  raise Exception("Before sort!")
         preparator_retail = RLDataPreparator(log.toPandas().sort_values(['user_idx','ts'], ascending=True))
        # raise Exception("Not in place!")
-        observations, actions, rewards, termaits = preparator_retail.prepare_data(count_to_use = 1000)
+        observations, actions, rewards, termaits, users = preparator_retail.prepare_data(count_to_use = 1000)
         train_dataset = MDPDataset(
             observations=np.asarray(observations),
             actions=np.asarray(actions) + 0.1,
@@ -129,6 +166,7 @@ class RLRecommender(Recommender):
             terminals=np.asarray(termaits)
         )
         print("Hello!")
+        self.trajetories = (observations, actions, rewards, termaits, users)
         return train_dataset
     
     def __scorelike_preparator(self, log: DataFrame) -> MDPDataset:
