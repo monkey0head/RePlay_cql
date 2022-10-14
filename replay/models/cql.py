@@ -110,7 +110,7 @@ class RLRecommender(Recommender):
         items = items.toPandas().to_numpy().flatten()
 
         # TODO: consider size-dependent batch prediction instead of by user
-        raise Exception(len(users))
+       # raise Exception(len(users))
         user_predictions = []
         for user in users:
             user_item_pairs = pd.DataFrame({
