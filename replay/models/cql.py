@@ -27,7 +27,7 @@ def generate_top(model, first_obs, K=5):
         next_element = model.predict([obs])
         obs += next_element.ravel()
     elements = np.where(obs!=0)
-    return elements
+    return elements[0]
 
 class RLRecommender(Recommender):
     top_k: int
@@ -90,7 +90,7 @@ class RLRecommender(Recommender):
             top_k_prediction = top_k_predicted_items[:k]
             relevance = np.repeat(0.5, k)
             
-            raise Exception(len(user_idxes),len(top_k_prediction),len(relevance))
+          #  raise Exception(len(user_idxes),len(top_k_prediction),len(relevance))
             
             user_item_pairs = pd.DataFrame({
                 'user_idx': np.repeat(user, k),
