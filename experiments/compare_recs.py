@@ -218,7 +218,7 @@ class BareRatingsRunner:
 #                 ]].sort_values(f'NDCG@{self.k}', ascending=False)
 #             )
             
-             print(
+            print(
                 self.experiment.results[[
                     f'MAP@{self.k}', f'Coverage@{self.k}', 'fit_time'
                 ]].sort_values(f'MAP@{self.k}', ascending=False)
