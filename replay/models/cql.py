@@ -63,6 +63,7 @@ class RLRecommender(Recommender):
         self.reward_top_k = reward_top_k
         self.mdp_type = mdp_type
         self.epoch_callback = epoch_callback
+        self.trajectories = None
         
     def _predict_for_trajectories(
         self,
@@ -166,7 +167,7 @@ class RLRecommender(Recommender):
             terminals=np.asarray(termaits)
         )
         print("Hello!")
-        self.trajetories = (observations, actions, rewards, termaits, users)
+        self.trajectories = (observations, actions, rewards, termaits, users)
         return train_dataset
     
     def __scorelike_preparator(self, log: DataFrame) -> MDPDataset:
