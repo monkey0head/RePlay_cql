@@ -75,7 +75,7 @@ class RLRecommender(Recommender):
         
         users = list(set(self.trajectories[-1]))[:10]
         
-        raise Exception(active_users_idx[:10], users)
+        #raise Exception(active_users_idx[:10], users)
        # items = items.toPandas().to_numpy().flatten()['user_idx'][:10]
         user_predictions = []
         
