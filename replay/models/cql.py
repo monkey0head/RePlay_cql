@@ -76,6 +76,7 @@ class RLRecommender(Recommender):
         users = users.toPandas().to_numpy().flatten()
         items = items.toPandas().to_numpy().flatten()
         user_predictions = []
+        
         for user in users:
             observation_idx = np.where(active_users_idx == user)
             user_observations = self.trajectories[0][observation_idx][0]
@@ -87,6 +88,7 @@ class RLRecommender(Recommender):
                 'relevance':np.repeat(user, 0.5)
             })
             user_predictions.append(user_item_pairs)
+        raise Exception(user_item_pairs)
         prediction = pd.concat(user_predictions)
         return DataPreparator.read_as_spark_df(prediction)    
         

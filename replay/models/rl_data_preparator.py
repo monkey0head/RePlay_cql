@@ -71,7 +71,7 @@ def df2trajectories(data, item_mapping, use_onehot = True):
     users = list(set(data['user_idx']))
     items_count = data['item_idx'].max()
     min_item_vaue = data['item_idx'].min()
-
+    full_users = []
     for user_id in users:
         user_information = data[data['user_idx'] == user_id]
         u_observations,u_actions,u_rewards,u_termaits =\
@@ -81,7 +81,8 @@ def df2trajectories(data, item_mapping, use_onehot = True):
         actions += u_actions
         rewards += u_rewards
         termaits += u_termaits
-    return observations, actions, rewards, termaits,users
+        full_users += [user_id for _ in range(len(u_actions))]
+    return observations, actions, rewards, termaits, full_users
 
 
 
