@@ -71,7 +71,7 @@ class RLRecommender(Recommender):
         users: DataFrame,
         items: DataFrame,
     ) -> DataFrame:
-        active_users_idx = np.asarray(aself.trajectories[-1])
+        active_users_idx = np.asarray(self.trajectories[-1])
         
         users = list(set(self.trajectories[-1]))[:10]
         
