@@ -254,11 +254,11 @@ class BareRatingsRunner:
     def build_experiment(self) -> Experiment:
         return Experiment(self.dataset.test, {
             MAP(): self.k,
-            NDCG(): self.k,
-            HitRate(): self.ks,
+#             NDCG(): self.k,
+#             HitRate(): self.ks,
             Coverage(self.dataset.log): self.k,
-            Surprisal(self.dataset.log): self.k,
-            MRR(): self.k
+#             Surprisal(self.dataset.log): self.k,
+#             MRR(): self.k
         })
 
     def build_models(self, algorithms: list[str]) -> dict[str, tuple[Recommender, DataFrame]]:
