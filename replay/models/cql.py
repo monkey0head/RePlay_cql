@@ -87,8 +87,8 @@ class RLRecommender(Recommender):
             top_k_predicted_items = generate_top(self.model, user_observations, K=5)
             user_item_pairs = pd.DataFrame({
                 'user_idx': np.repeat(user, k),
-                'item_idx': top_k_predicted_items,
-                'relevance':np.repeat(user, 0.5)
+                'item_idx': top_k_predicted_items[:k],
+                'relevance':np.repeat(0.5, k)
             })
             user_predictions.append(user_item_pairs)
       # raise Exception(user_item_pairs)
