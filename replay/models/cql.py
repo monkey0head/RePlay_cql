@@ -75,7 +75,7 @@ class RLRecommender(Recommender):
         
         users = users.toPandas().to_numpy().flatten()
         items = items.toPandas().to_numpy().flatten()
-        
+        user_predictions = []
         for user in users:
             observation_idx = np.where(active_users_idx == user)
             user_observations = self.trajectories[0][observation_idx][0]
