@@ -79,7 +79,7 @@ class RLRecommender(Recommender):
         
         for user in users:
             observation_idx = np.where(active_users_idx == user)
-            user_observations = self.trajectories[0][observation_idx][0]
+            user_observations = np.asarray(self.trajectories[0])[observation_idx][0]
             user_predictions = []
             top_k_predicted_items = generate_top(self.model, user_observations, K=5)
             user_item_pairs = pd.DataFrame({
