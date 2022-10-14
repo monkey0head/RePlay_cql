@@ -84,7 +84,16 @@ class RLRecommender(Recommender):
           #  raise Exception(user, observation_idx)
             user_observations = np.asarray(self.trajectories[0])[observation_idx][0]
             user_predictions = []
-            top_k_predicted_items = generate_top(self.model, user_observations, K=k)
+            top_k_predicted_items = generate_top(self.model, user_observations, K=k*2)
+            
+            user_idxes = np.repeat(user, k)
+            top_k_prediction = top_k_items[:k]
+            relevance = np.repeat(0.5, k)
+            
+            print(len(user_idxes))
+            print(len(top_k_prediction))
+            print(len(relevance))
+            
             user_item_pairs = pd.DataFrame({
                 'user_idx': np.repeat(user, k),
                 'item_idx': top_k_predicted_items[:k],
