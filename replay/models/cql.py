@@ -71,9 +71,11 @@ class RLRecommender(Recommender):
         users: DataFrame,
         items: DataFrame,
     ) -> DataFrame:
-        active_users_idx = self.trajectories[-1]
+        active_users_idx = np.asarray(aself.trajectories[-1])
         
         users = list(set(self.trajectories[-1]))[:10]
+        
+        raise Exception(active_users_idx[:10], users)
        # items = items.toPandas().to_numpy().flatten()['user_idx'][:10]
         user_predictions = []
         
