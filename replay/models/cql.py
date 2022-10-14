@@ -88,7 +88,7 @@ class RLRecommender(Recommender):
                 'relevance':np.repeat(user, 0.5)
             })
             user_predictions.append(user_item_pairs)
-        raise Exception(user_item_pairs)
+      # raise Exception(user_item_pairs)
         prediction = pd.concat(user_predictions)
         return DataPreparator.read_as_spark_df(prediction)    
         
