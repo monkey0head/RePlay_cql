@@ -11,6 +11,7 @@ from d3rlpy.constants import ActionSpace
 from d3rlpy.models.encoders import EncoderFactory
 from d3rlpy.models.optimizers import OptimizerFactory, AdamFactory
 from d3rlpy.torch_utility import TorchMiniBatch
+from d3rlpy.models.q_functions import QFunctionFactory
 
 from replay.models.sdac.policies import GumbelPolicy
 
