@@ -22,6 +22,8 @@ class SDAC(RLRecommender):
         "temp_learning_rate": {"type": "loguniform", "args": [1e-5, 1e-3]},
         "gamma": {"type": "loguniform", "args": [0.9, 0.999]},
         "n_critics": {"type": "int", "args": [2, 4]},
+        "gumb_temp": {"type": "float", "args": [0, 1]},
+        "dist_tresh": {"type": "float", "args": [0, 1]},
     }
 
     def __init__(
