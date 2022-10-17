@@ -244,6 +244,8 @@ class SDAC(SAC):
             kwargs=kwargs,
         )
         self._impl = impl
+        
+        raise Exception(gumb_temp, dist_tresh)
         self.gumb_temp=gumb_temp, 
         self.dist_tresh=dist_tresh
 
