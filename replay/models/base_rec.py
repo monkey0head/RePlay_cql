@@ -159,7 +159,11 @@ class BaseRecommender(ABC):
                     value < borders[0] or value > borders[1]
                 )
             except:
-                raise Exception((value, borders))
+                #aise Exception((value, borders))
+                value = value[0]
+                param_out_of_bounds = param_type != "categorical" and (
+                    value < borders[0] or value > borders[1]
+                )
             if extra_category or param_out_of_bounds:
                 outside_search_space[param] = {
                     "borders": borders,
