@@ -22,7 +22,7 @@ from replay.models import Recommender
 from replay.session_handler import State, get_spark_session
 from replay.splitters import DateSplitter
 from replay.utils import get_log_info
-
+from replay.models.sdac.sdac import SDAC
 
 class RatingsDataset:
     name: str
@@ -228,7 +228,7 @@ class BareRatingsRunner:
         Run fit_predict for the `model`, measure time on fit_predict and evaluate metrics
         """
         start_time = time.time()
-
+        model = SDAC()
         model.optimize(train, train ) #model.fit(log=train)
         fit_time = time.time() - start_time
 
