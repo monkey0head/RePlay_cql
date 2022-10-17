@@ -215,7 +215,7 @@ class BareRatingsRunner:
                 model_name, model, self.experiment,
                 train=train, top_k=self.k, test_users=self.dataset.log
             )
-             print(
+            print(
                 self.experiment.results[[
                     f'NDCG@{self.k}', f'MRR@{self.k}', f'Coverage@{self.k}', 'fit_time'
                 ]].sort_values(f'NDCG@{self.k}', ascending=False)
