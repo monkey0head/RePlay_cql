@@ -171,7 +171,7 @@ class RLRecommender(Recommender):
     @property
     def _init_args(self):
         args = dict(
-            top_k=self.top_k,
+            top_k=self.k,
             n_epochs=self.n_epochs,
             action_randomization_scale=self.action_randomization_scale,
             use_negative_events=self.use_negative_events,
