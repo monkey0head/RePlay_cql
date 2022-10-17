@@ -181,7 +181,7 @@ class BareRatingsRunner:
         self.rating_based_reward = rating_based_reward
         self.reward_top_k = reward_top_k
         self.dist_tresh = dist_tresh
-        self.gumb_temp = gumb_temp,
+        self.gumb_temp = gumb_temp
 
         self.label = label
 
