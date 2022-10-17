@@ -261,7 +261,7 @@ class BareRatingsRunner:
         pred.unpersist()
 
     def build_experiment(self) -> Experiment:
-        return Experiment(self.dataset.test, {
+        return Experiment(self.dataset.log, {
             MAP(): self.k,
 #             NDCG(): self.k,
 #             HitRate(): self.ks,
