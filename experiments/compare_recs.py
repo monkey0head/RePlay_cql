@@ -310,8 +310,6 @@ class BareRatingsRunner:
                 # full-log nums => I take an upper-bound
                 user_num = self.dataset.users.count()
                 item_num = self.dataset.items.count()
-                print(f'User num: {user_num}, item num: {item_num}')
-
                 models['DDPG'] = (
                     DDPG(seed=self.seed, user_num=user_num, item_num=item_num),
                     self.dataset.pos_binary_train
