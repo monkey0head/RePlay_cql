@@ -145,7 +145,7 @@ class BaseRecommender(ABC):
         """Check if model params are inside search space"""
         params = self._init_args  # pylint: disable=no-member
         outside_search_space = {}
-        raise Exception(params)
+       # raise Exception(params)
         for param, value in params.items():
             if param not in search_space:
                 continue

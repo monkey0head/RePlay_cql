@@ -23,7 +23,7 @@ class SDAC(RLRecommender):
 #         "gamma": {"type": "loguniform", "args": [0.9, 0.999]},
 #         "n_critics": {"type": "int", "args": [2, 4]},
         "tau" : {"type": "loguniform", "args": [0.001, 1]},
-        "gumb_temp": {"type": "loguniform", "args": [0.0001, 1.5]},
+     #   "gumb_temp": {"type": "loguniform", "args": [0.0001, 1.5]},
         "dist_tresh": {"type": "loguniform", "args": [0.1, 1]},
     }
 
