@@ -15,6 +15,8 @@ from d3rlpy.torch_utility import TorchMiniBatch
 from d3rlpy.models.q_functions import QFunctionFactory
 
 from replay.models.sdac.policies import GumbelPolicy
+from d3rlpy.preprocessing import ActionScaler, RewardScaler, Scaler
+from d3rlpy.torch_utility import TorchMiniBatch, hard_sync, torch_api, train_api
 
 
 def create_gumbel_policy(
