@@ -2,6 +2,7 @@ from typing import Sequence, Optional, Any
 
 import torch
 from d3rlpy.algos import SAC
+from d3rlpy.gpu import Device
 from d3rlpy.algos.torch import SACImpl
 from d3rlpy.argument_utility import (
     EncoderArg, QFuncArg, UseGPUArg, ScalerArg, ActionScalerArg,
