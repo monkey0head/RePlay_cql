@@ -41,16 +41,17 @@ def trunc_GBL(p, x):
 
 
 class GumbelDistribution(Distribution):
-    def __init__(self, logits, probs=None, temperature=1):
+    def __init__(self, logits, probs=None, temperature=1, dist_tresh = 0.5):
         super().__init__()
         self.logits = logits
         self.probs = probs
         self.eps = 1e-20
         self.temperature = 1
+        self.dist_tresh = dist_tresh
 
     def sample_gumbel(self):
         U = torch.zeros_like(self.logits)
-        U.uniform_(0, 1)
+        U.uniform_(0, self.dist_tresh)
         to_gumbel = -torch.log(-torch.log(U + self.eps) + self.eps)
         return to_gumbel
 

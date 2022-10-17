@@ -19,20 +19,72 @@ def create_gumbel_policy(
         observation_shape: Sequence[int],
         action_size: int,
         encoder_factory: EncoderFactory,
+        gumb_temp = 1, 
+        dist_tresh = 0.5
 ) -> GumbelPolicy:
     encoder = encoder_factory.create(observation_shape)
-    return GumbelPolicy(encoder, action_size)
+    return GumbelPolicy(encoder, action_size, gumbel_temp = gumb_temp, dist_tresh = dist_tresh)
 
 
 class SDACImpl(SACImpl):
     _policy: Optional[GumbelPolicy]
     _targ_policy: Optional[GumbelPolicy]
+        
+    def __init__(
+        self,
+        observation_shape: Sequence[int],
+        action_size: int,
+        actor_learning_rate: float,
+        critic_learning_rate: float,
+        temp_learning_rate: float,
+        actor_optim_factory: OptimizerFactory,
+        critic_optim_factory: OptimizerFactory,
+        temp_optim_factory: OptimizerFactory,
+        actor_encoder_factory: EncoderFactory,
+        critic_encoder_factory: EncoderFactory,
+        q_func_factory: QFunctionFactory,
+        gamma: float,
+        tau: float,
+        n_critics: int,
+        initial_temperature: float,
+        use_gpu: Optional[Device],
+        scaler: Optional[Scaler],
+        action_scaler: Optional[ActionScaler],
+        reward_scaler: Optional[RewardScaler],
+        gumb_temp=1, 
+        dist_tresh=0.5
+    ):
+        super().__init__(
+            observation_shape=observation_shape,
+            action_size=action_size,
+            actor_learning_rate=actor_learning_rate,
+            critic_learning_rate=critic_learning_rate,
+            actor_optim_factory=actor_optim_factory,
+            critic_optim_factory=critic_optim_factory,
+            actor_encoder_factory=actor_encoder_factory,
+            critic_encoder_factory=critic_encoder_factory,
+            q_func_factory=q_func_factory,
+            gamma=gamma,
+            tau=tau,
+            n_critics=n_critics,
+            use_gpu=use_gpu,
+            scaler=scaler,
+            action_scaler=action_scaler,
+            reward_scaler=reward_scaler,
+            temp_learning_rate = temp_learning_rate,
+            temp_optim_factory = temp_optim_factory,
+            initial_temperature = initial_temperature
+        )
+        self.gumb_temp = gumb_temp, 
+        self.dist_tresh = dist_tresh
 
     def _build_actor(self) -> None:
         self._policy = create_gumbel_policy(
             self._observation_shape,
             self._action_size,
             self._actor_encoder_factory,
+            gumb_temp = self.gumb_temp, 
+            dist_tresh = self.dist_tresh
         )
 
     def compute_target(self, batch: TorchMiniBatch) -> torch.Tensor:
@@ -159,6 +211,8 @@ class SDAC(SAC):
             action_scaler: ActionScalerArg = None,
             reward_scaler: RewardScalerArg = None,
             impl: Optional[SDACImpl] = None,
+            gumb_temp: float = 1, 
+            dist_tresh: float = 0.5
             **kwargs: Any
     ):
         super().__init__(
@@ -186,6 +240,8 @@ class SDAC(SAC):
             kwargs=kwargs,
         )
         self._impl = impl
+        self.gumb_temp=gumb_temp, 
+        self.dist_tresh=dist_tresh
 
     def _create_impl(
         self, observation_shape: Sequence[int], action_size: int
@@ -210,6 +266,8 @@ class SDAC(SAC):
             scaler=self._scaler,
             action_scaler=self._action_scaler,
             reward_scaler=self._reward_scaler,
+            gumb_temp = self.gumb_temp,
+            dist_tresh = self.dist_tresh
         )
         self._impl.build()
 

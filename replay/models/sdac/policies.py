@@ -20,11 +20,13 @@ class GumbelPolicy(CategoricalPolicy):
     _encoder: Encoder
     _fc: nn.Linear
 
-    def __init__(self, encoder: Encoder, action_size: int):
+    def __init__(self, encoder: Encoder, action_size: int, gumbel_temp = 1, dist_tresh = 0.5):
         super().__init__(encoder, action_size)
         self._encoder = encoder
         self._fc = nn.Linear(encoder.get_feature_size(), action_size)
         self.softmax = nn.Softmax(dim=1)
+        self.dist_tresh = dist_tresh
+        self.gumbel_temp = gumbel_temp
 
     def forward(
         self,
@@ -51,7 +53,7 @@ class GumbelPolicy(CategoricalPolicy):
         h = self._encoder(x)
         h = self._fc(h)
         h = self.softmax(h)
-        return GumbelDistribution(h)
+        return GumbelDistribution(h,temperature = self.gumbel_temp, dist_tresh = self.dist_tresh)
 
     def best_action(self, x: torch.Tensor) -> torch.Tensor:
         out = self.forward(x, deterministic=True)
