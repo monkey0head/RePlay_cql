@@ -29,6 +29,9 @@ class RatingsDataset:
     category: str
 
     log: DataFrame
+    users: DataFrame
+    items: DataFrame
+
     binary_train: DataFrame
     pos_binary_train: DataFrame
     raw_train: DataFrame
@@ -37,13 +40,27 @@ class RatingsDataset:
 
     def __init__(self, name: str, core: int, test_ratio: float):
         self.name, self.category = name.split('.')
+        self.log = self._read_dataset(self.name, self.category)
+        self._reindex()
 
-        if self.name == 'MovieLens':
+        if core > 0:
+            self._filter_rares(min_k_ratings=core)
+
+        # self.log is now ready to be used
+        self.users = self.log.select('user_idx').distinct().cache()
+        self.items = self.log.select('item_idx').distinct().cache()
+
+        # prepare train/test datasets and store to corresponding attributes
+        self._build_train_test(test_ratio=test_ratio)
+
+    @staticmethod
+    def _read_dataset(name: str, category: str):
+        if name == 'MovieLens':
             from rs_datasets import MovieLens
-            ds = MovieLens(version=self.category)
-        elif self.name == 'Amazon':
+            ds = MovieLens(version=category)
+        elif name == 'Amazon':
             from rs_datasets import Amazon
-            ds = Amazon(category=self.category)
+            ds = Amazon(category=category)
         else:
             raise KeyError()
 
@@ -53,19 +70,29 @@ class RatingsDataset:
             'relevance': 'rating',
             'timestamp': 'timestamp'
         }
-        pd_log = ds.ratings
 
-        data_preparator = DataPreparator()
-        log = data_preparator.transform(columns_mapping=col_mapping, data=pd_log)
+        return (
+            DataPreparator()
+            .transform(columns_mapping=col_mapping, data=ds.ratings)
+            # rename ids to `idx` for simplicity
+            .withColumnRenamed('user_id', 'user_idx')
+            .withColumnRenamed('item_id', 'item_idx')
+            .cache()
+        )
 
-        indexer = Indexer()
-        indexer.fit(users=log.select('user_id'), items=log.select('item_id'))
+    def _reindex(self):
+        """Makes ids in log start from 0 and be consecutive."""
+        log = self.log.cache()
+        users = log.select('user_idx').distinct().cache()
+        items = log.select('item_idx').distinct().cache()
+
+        indexer = Indexer(user_col='user_idx', item_col='item_idx')
+        indexer.fit(users=users, items=items)
         self.log = indexer.transform(log)
-        log.unpersist()
 
-        if core > 0:
-            self.filter_rare(min_k_ratings=core)
-        self._build_train_test(test_ratio=test_ratio)
+        log.unpersist()
+        users.unpersist()
+        items.unpersist()
 
     def _build_train_test(self, test_ratio: float):
         log = self.log.cache()
@@ -96,13 +123,13 @@ class RatingsDataset:
         self.test = test
         self.test_users = test_users
 
-    def filter_rare(self, min_k_ratings: int):
+    def _filter_rares(self, min_k_ratings: int):
         log = self.log.cache()
         # take approximate k-core filtering approach iteratively cleaning the data
         # NB: the sufficient number of iterations found empirically
         for _ in range(2):
             for col in ['item_idx', 'user_idx']:
-                filtered_log = self._filter_rares(log, col, min_k_ratings)
+                filtered_log = RatingsDataset._filter_rares_by_column(log, col, min_k_ratings)
                 filtered_log = filtered_log.cache()
                 filtered_log.count()
 
@@ -110,9 +137,11 @@ class RatingsDataset:
                 log = filtered_log
 
         self.log = log
+        # reindex as we filtered users and items
+        self._reindex()
 
     @staticmethod
-    def _filter_rares(log: DataFrame, col: str, min_k_ratings: int) -> DataFrame:
+    def _filter_rares_by_column(log: DataFrame, col: str, min_k_ratings: int) -> DataFrame:
         filtered_ids = (
             log.select(col)
             .groupBy(col).count()
@@ -121,9 +150,9 @@ class RatingsDataset:
             .select(sf.col(col).alias('filtered_id'))
         )
         return (
-                log
-                .join(filtered_ids, sf.col(col) == sf.col('filtered_id'), 'inner')
-                .drop('filtered_id')
+            log
+            .join(filtered_ids, sf.col(col) == sf.col('filtered_id'), 'inner')
+            .drop('filtered_id')
         )
 
     @property
@@ -278,8 +307,13 @@ class BareRatingsRunner:
                 models['CRR'] = build_rl_recommender(CRR), self.dataset.raw_train
             elif alg == 'ddpg':
                 from replay.models.ddpg import DDPG
+                # full-log nums => I take an upper-bound
+                user_num = self.dataset.users.count()
+                item_num = self.dataset.items.count()
+                print(f'User num: {user_num}, item num: {item_num}')
+
                 models['DDPG'] = (
-                    DDPG(seed=self.seed, user_num=1000, item_num=2500),
+                    DDPG(seed=self.seed, user_num=user_num, item_num=item_num),
                     self.dataset.pos_binary_train
                 )
             elif alg == 'als':
