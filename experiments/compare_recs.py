@@ -376,7 +376,7 @@ def main():
 
     args = parse_args()
     runner = BareRatingsRunner(
-        k=[1, 5, 10], test_ratio=0.2,
+        k=[1, 5, 10], test_ratio=0.2,dist_tresh = 0.5, gumb_temp = 1,
         **vars(args)
     )
     runner.run()
