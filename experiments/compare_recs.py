@@ -227,7 +227,7 @@ class BareRatingsRunner:
         """
         start_time = time.time()
 
-        model.optimize(train, test_users }) #model.fit(log=train)
+        model.optimize(train, test_users ) #model.fit(log=train)
         fit_time = time.time() - start_time
 
         pred = model.predict(log=train, k=top_k, users=test_users).cache()
