@@ -41,7 +41,7 @@ def trunc_GBL(p, x):
 
 
 class GumbelDistribution(Distribution):
-    def __init__(self, logits, probs=None, temperature=1, dist_tresh = 0.5):
+    def __init__(self, logits, probs=None, temperature=1.0, dist_tresh = 0.5):
         super().__init__()
         self.logits = logits
         self.probs = probs

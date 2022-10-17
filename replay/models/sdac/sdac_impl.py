@@ -23,7 +23,7 @@ def create_gumbel_policy(
         observation_shape: Sequence[int],
         action_size: int,
         encoder_factory: EncoderFactory,
-        gumb_temp = 1, 
+        gumb_temp = 1.0, 
         dist_tresh = 0.5
 ) -> GumbelPolicy:
     encoder = encoder_factory.create(observation_shape)
@@ -55,7 +55,7 @@ class SDACImpl(SACImpl):
         scaler: Optional[Scaler],
         action_scaler: Optional[ActionScaler],
         reward_scaler: Optional[RewardScaler],
-        gumb_temp=1, 
+        gumb_temp=1.0, 
         dist_tresh=0.5
     ):
         super().__init__(
@@ -215,7 +215,7 @@ class SDAC(SAC):
             action_scaler: ActionScalerArg = None,
             reward_scaler: RewardScalerArg = None,
             impl: Optional[SDACImpl] = None,
-            gumb_temp: float = 1, 
+            gumb_temp: float = 1.0, 
             dist_tresh: float = 0.5,
             **kwargs: Any
     ):
