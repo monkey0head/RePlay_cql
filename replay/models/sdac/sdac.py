@@ -57,8 +57,8 @@ class SDAC(RLRecommender):
             scaler: ScalerArg = None,
             action_scaler: ActionScalerArg = None,
             reward_scaler: RewardScalerArg = None,
-            gumb_temp: float = 1.0, 
-            dist_tresh: float = 0.5,
+            gumb_temp: float, 
+            dist_tresh: float,
             **params: Any
     ):
         model = sdac_impl.SDAC(
