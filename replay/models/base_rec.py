@@ -150,13 +150,14 @@ class BaseRecommender(ABC):
                 continue
             borders = search_space[param]["args"]
             param_type = search_space[param]["type"]
-
+            raise Exception(value)
             extra_category = (
                 param_type == "categorical" and value not in borders
             )
             param_out_of_bounds = param_type != "categorical" and (
                 value < borders[0] or value > borders[1]
             )
+            
             if extra_category or param_out_of_bounds:
                 outside_search_space[param] = {
                     "borders": borders,
