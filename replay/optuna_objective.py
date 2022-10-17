@@ -73,6 +73,7 @@ def suggest_params(
         else:
             low, high = border
             suggest_fn = suggest_dict[param_type]
+            if isinstance(param, tuple): param = param[0]
             res[param] = suggest_fn(param, low=low, high=high)
     return res
 
