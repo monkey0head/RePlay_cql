@@ -80,8 +80,8 @@ class SDAC(RLRecommender):
             action_scaler=action_scaler,
             reward_scaler=reward_scaler,
             impl=None,
-            gumb_temp: gumb_temp, 
-            dist_tresh: dist_tresh,
+            gumb_temp = gumb_temp, 
+            dist_tresh =  dist_tresh,
             **params
         )
 
