@@ -212,7 +212,7 @@ class SDAC(SAC):
             reward_scaler: RewardScalerArg = None,
             impl: Optional[SDACImpl] = None,
             gumb_temp: float = 1, 
-            dist_tresh: float = 0.5
+            dist_tresh: float = 0.5,
             **kwargs: Any
     ):
         super().__init__(
