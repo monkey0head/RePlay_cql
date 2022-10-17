@@ -167,7 +167,7 @@ class BaseRecommender(ABC):
             if extra_category or param_out_of_bounds:
                 outside_search_space[param] = {
                     "borders": borders,
-                    "value": value,
+                    "value": value[0] if isinstance(value,tuple) else value,
                 }
 
         if outside_search_space:
