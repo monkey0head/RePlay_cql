@@ -156,7 +156,7 @@ class BareRatingsRunner:
             algorithms: list[str], epochs: list[int], label: str,
             k: Union[int, list[int]], test_ratio: float,
             action_randomization_scale: float, use_negative_events: bool,
-            rating_based_reward: bool, reward_top_k: bool,
+            rating_based_reward: bool, reward_top_k: bool,dist_tresh: float, gumb_temp:float,
             seed: int = None
     ):
         self.logger = logging.getLogger("replay")
@@ -180,6 +180,8 @@ class BareRatingsRunner:
         self.use_negative_events = use_negative_events
         self.rating_based_reward = rating_based_reward
         self.reward_top_k = reward_top_k
+        self.dist_tresh = dist_tresh
+        self.gumb_temp = gumb_temp,
 
         self.label = label
 
@@ -260,7 +262,8 @@ class BareRatingsRunner:
                 action_randomization_scale=self.action_randomization_scale,
                 use_negative_events=self.use_negative_events,
                 rating_based_reward=self.rating_based_reward,
-                reward_top_k=self.reward_top_k,
+                reward_top_k=self.reward_top_k,gumb_temp = self.gumb_temp, dist_tresh = self.dist_tresh,
+
                 epoch_callback=None
             )
 
