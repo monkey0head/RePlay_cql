@@ -49,7 +49,8 @@ class RatingsDataset:
             ds = RetailRocket()
         else:
             raise KeyError()
-
+        
+        ### TS - timestamp to NONE !!
         col_mapping = {
             'user_id': 'user_id',
             'item_id': 'item_id',
@@ -74,6 +75,8 @@ class RatingsDataset:
 
         if core > 0:
             self.filter_rare(min_k_ratings=core)
+            
+        ### Build via timestamp
         self._build_train_test(test_ratio=test_ratio)
 
     def _build_train_test(self, test_ratio: float):
@@ -248,7 +251,7 @@ class BareRatingsRunner:
 
         pred = model.predict(log=train, k=top_k, users=test_users).cache()
         
-        raise Exception(pred)
+       # raise Exception(pred)
         predict_time = time.time() - start_time - fit_time
 
         experiment.add_result(name, pred)
