@@ -16,12 +16,12 @@ class SDAC(RLRecommender):
     model: sdac_impl.SDAC
 
     _search_space = {
-        "actor_learning_rate": {"type": "loguniform", "args": [1e-5, 1e-3]},
-        "critic_learning_rate": {"type": "loguniform", "args": [3e-5, 3e-4]},
-        "n_epochs": {"type": "int", "args": [3, 20]},
-        "temp_learning_rate": {"type": "loguniform", "args": [1e-5, 1e-3]},
-        "gamma": {"type": "loguniform", "args": [0.9, 0.999]},
-        "n_critics": {"type": "int", "args": [2, 4]},
+#         "actor_learning_rate": {"type": "loguniform", "args": [1e-5, 1e-3]},
+#         "critic_learning_rate": {"type": "loguniform", "args": [3e-5, 3e-4]},
+#         "n_epochs": {"type": "int", "args": [3, 20]},
+#         "temp_learning_rate": {"type": "loguniform", "args": [1e-5, 1e-3]},
+#         "gamma": {"type": "loguniform", "args": [0.9, 0.999]},
+#         "n_critics": {"type": "int", "args": [2, 4]},
         "gumb_temp": {"type": "float", "args": [0, 1]},
         "dist_tresh": {"type": "float", "args": [0, 1]},
     }
