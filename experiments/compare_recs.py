@@ -215,24 +215,24 @@ class BareRatingsRunner:
                 model_name, model, self.experiment,
                 train=train, top_k=self.k, test_users=self.dataset.log
             )
+             print(
+                self.experiment.results[[
+                    f'NDCG@{self.k}', f'MRR@{self.k}', f'Coverage@{self.k}', 'fit_time'
+                ]].sort_values(f'NDCG@{self.k}', ascending=False)
+            )
+            
 #             print(
 #                 self.experiment.results[[
-#                     f'NDCG@{self.k}', f'MRR@{self.k}', f'Coverage@{self.k}', 'fit_time'
-#                 ]].sort_values(f'NDCG@{self.k}', ascending=False)
+#                     f'MAP@{self.k}', f'Coverage@{self.k}', 'fit_time'
+#                 ]].sort_values(f'MAP@{self.k}', ascending=False)
 #             )
-            
-            print(
-                self.experiment.results[[
-                    f'MAP@{self.k}', f'Coverage@{self.k}', 'fit_time'
-                ]].sort_values(f'MAP@{self.k}', ascending=False)
-            )
 
 
 #             results_md = self.experiment.results.sort_values(
 #                 f'NDCG@{self.k}', ascending=False
 #             ).to_markdown()
-            with open(results_label, 'w') as text_file:
-                text_file.write(results_md)
+#             with open(results_label, 'w') as text_file:
+#                 text_file.write(results_md)
 
         self.print_time('===> Experiment finished')
 
