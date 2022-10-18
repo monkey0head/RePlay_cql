@@ -62,7 +62,7 @@ class GumbelDistribution(Distribution):
         a probability distribution that sums to 1 across classes.
         """
         y = self.logits + self.sample_gumbel()
-       # raise Exception(self.temperature)
+        raise Exception(self.temperature)
         out = torch.softmax(y / self.temperature[0], dim=-1)
         return out
 
