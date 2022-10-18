@@ -46,7 +46,7 @@ class GumbelDistribution(Distribution):
         self.logits = logits
         self.probs = probs
         self.eps = 1e-20
-        self.temperature = temperature
+        self.temperature = temperature[0] if isinstance(temperature, tuple) else temperature
         self.dist_tresh = dist_tresh
 
     def sample_gumbel(self):
