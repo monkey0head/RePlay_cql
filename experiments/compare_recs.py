@@ -228,8 +228,8 @@ class BareRatingsRunner:
         Run fit_predict for the `model`, measure time on fit_predict and evaluate metrics
         """
         start_time = time.time()
-        model = SDAC(top_k = 10, gumb_temp = 1, dist_tresh = 0.5)
-        model.optimize(train, train ) #model.fit(log=train)
+        model = SDAC(top_k = 10, gumb_temp = 1, dist_tresh = 0.5, tau = 0.005)
+        model.fit(log=train)
         fit_time = time.time() - start_time
 
         pred = model.predict(log=train, k=top_k, users=test_users).cache()
