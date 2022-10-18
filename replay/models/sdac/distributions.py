@@ -46,11 +46,12 @@ class GumbelDistribution(Distribution):
         self.logits = logits
         self.probs = probs
         self.eps = 1e-20
-        self.temperature = 1
+        self.temperature = temperature
         self.dist_tresh = dist_tresh
 
     def sample_gumbel(self):
         U = torch.zeros_like(self.logits)
+        raise Exception(self.dist_tresh)
         U.uniform_(0, self.dist_tresh)
         to_gumbel = -torch.log(-torch.log(U + self.eps) + self.eps)
         return to_gumbel
