@@ -221,6 +221,8 @@ class BareRatingsRunner:
         self.logger.info(msg=f'{text}: \t{time.time() - self.init_time:.3f}')
 
     def run(self):
+        from replay.models import TorchRecommender
+
         results_label = f'{self.label}.{self.dataset.fullname}.md'
         self.logger.info(msg=f'Results are saved to \n\t{results_label}')
 
@@ -228,21 +230,53 @@ class BareRatingsRunner:
             model, train = self.models[model_name]
             self.logger.info(msg='{} started'.format(model_name))
 
-            self.fit_predict_add_res(
-                model_name, model, self.experiment,
-                train=train, top_k=self.k, test_users=self.dataset.test_users
-            )
-            print(
-                self.experiment.results[[
-                    f'NDCG@{self.k}', f'MRR@{self.k}', f'Coverage@{self.k}', 'fit_time'
-                ]].sort_values(f'NDCG@{self.k}', ascending=False)
-            )
+            if isinstance(model, TorchRecommender):
+                n_epochs = self.epochs[-1]
+                schedule = self.epochs
+            else:
+                n_epochs = 1
+                schedule = [1]
 
-            results_md = self.experiment.results.sort_values(
-                f'NDCG@{self.k}', ascending=False
-            ).to_markdown()
-            with open(results_label, 'w') as text_file:
-                text_file.write(results_md)
+            fit_time, predict_time, metric_time = 0, 0, 0
+            for epoch in range(n_epochs):
+                epoch += 1
+
+                start_time = time.time()
+                model.fit(log=train)
+                fit_time += time.time() - start_time
+
+                if epoch not in schedule:
+                    continue
+
+                start_time = time.time()
+                pred = model.predict(log=train, k=self.k, users=self.dataset.test_users).cache()
+                predict_time += time.time() - start_time
+
+                name = f'{model_name}.{epoch}' if epoch > 1 else model_name
+
+                start_time = time.time()
+                self.experiment.add_result(name, pred)
+                metric_time += time.time() - start_time
+
+                self.experiment.results.loc[name, 'fit_time'] = fit_time
+                self.experiment.results.loc[name, 'predict_time'] = predict_time
+                self.experiment.results.loc[name, 'metric_time'] = metric_time
+                self.experiment.results.loc[name, 'full_time'] = (
+                        fit_time + predict_time + metric_time
+                )
+                pred.unpersist()
+
+                print(
+                    self.experiment.results[[
+                        f'NDCG@{self.k}', f'MRR@{self.k}', f'Coverage@{self.k}', 'fit_time'
+                    ]].sort_values(f'NDCG@{self.k}', ascending=False)
+                )
+
+                results_md = self.experiment.results.sort_values(
+                    f'NDCG@{self.k}', ascending=False
+                ).to_markdown()
+                with open(results_label, 'w') as text_file:
+                    text_file.write(results_md)
 
         self.print_time('===> Experiment finished')
 
@@ -254,22 +288,41 @@ class BareRatingsRunner:
         """
         Run fit_predict for the `model`, measure time on fit_predict and evaluate metrics
         """
-        start_time = time.time()
+        from replay.models import TorchRecommender
+        from replay.models.cql import RLRecommender
+        if isinstance(model, TorchRecommender) or isinstance(model, RLRecommender):
+            n_epochs = self.epochs[-1]
+            schedule = self.epochs
+        else:
+            n_epochs = 1
+            schedule = [1]
 
-        model.fit(log=train)
-        fit_time = time.time() - start_time
+        fit_time, predict_time, metric_time = 0, 0, 0
+        for epoch in range(n_epochs):
+            epoch += 1
 
-        pred = model.predict(log=train, k=top_k, users=test_users).cache()
-        predict_time = time.time() - start_time - fit_time
+            start_time = time.time()
+            model.fit(log=train)
+            fit_time += time.time() - start_time
 
-        experiment.add_result(name, pred)
-        metric_time = time.time() - start_time - fit_time - predict_time
+            if epoch not in schedule:
+                continue
 
-        experiment.results.loc[name, 'fit_time'] = fit_time
-        experiment.results.loc[name, 'predict_time'] = predict_time
-        experiment.results.loc[name, 'metric_time'] = metric_time
-        experiment.results.loc[name, 'full_time'] = (fit_time + predict_time + metric_time)
-        pred.unpersist()
+            start_time = time.time()
+            pred = model.predict(log=train, k=top_k, users=test_users).cache()
+            predict_time += time.time() - start_time
+
+            _name = f'{name}.{epoch}' if epoch > 1 else name
+
+            start_time = time.time()
+            experiment.add_result(_name, pred)
+            metric_time += time.time() - start_time
+
+            experiment.results.loc[_name, 'fit_time'] = fit_time
+            experiment.results.loc[_name, 'predict_time'] = predict_time
+            experiment.results.loc[_name, 'metric_time'] = metric_time
+            experiment.results.loc[_name, 'full_time'] = (fit_time + predict_time + metric_time)
+            pred.unpersist()
 
     def build_experiment(self) -> Experiment:
         return Experiment(self.dataset.test, {
@@ -311,7 +364,7 @@ class BareRatingsRunner:
                 user_num = self.dataset.users.count()
                 item_num = self.dataset.items.count()
                 models['DDPG'] = (
-                    DDPG(seed=self.seed, user_num=user_num, item_num=item_num),
+                    DDPG(user_num=user_num, item_num=item_num),
                     self.dataset.pos_binary_train
                 )
             elif alg == 'als':
