@@ -465,7 +465,7 @@ class DDPG(TorchRecommender):
     This implementation enhanced by more advanced noise strategy.
     """
 
-    batch_size: int = 512
+    batch_size: int = 1024
     embedding_dim: int = 8
     hidden_dim: int = 16
     value_lr: float = 1e-5
@@ -476,19 +476,19 @@ class DDPG(TorchRecommender):
     memory_size: int = 5
     min_value: int = -10
     max_value: int = 10
-    buffer_size: int = 1000000
+    buffer_size: int = 100000
     _search_space = {
         "noise_sigma": {"type": "uniform", "args": [0.1, 0.6]},
         "noise_theta": {"type": "uniform", "args": [0.1, 0.4]},
     }
 
     def __init__(
-        self,
+        self, *,
+        user_num: int,
+        item_num: int,
         noise_sigma: float = 0.2,
         noise_theta: float = 0.1,
         seed: int = 9,
-        user_num: int = 5000,
-        item_num: int = 200000,
         log_dir: str = "logs/tmp",
     ):
         """
@@ -625,44 +625,13 @@ class DDPG(TorchRecommender):
     def _get_data_loader(data, item_num, matrix):
         dataset = EvalDataset(data, item_num, matrix)
         loader = td.DataLoader(
-            dataset, batch_size=100, shuffle=False, num_workers=16
+            dataset, batch_size=100, shuffle=False, num_workers=1
         )
         return loader
 
     @staticmethod
     def _get_beta(idx, beta_start=0.4, beta_steps=100000):
         return min(1.0, beta_start + idx * (1.0 - beta_start) / beta_steps)
-
-    @staticmethod
-    def _preprocess_log(log):
-        """
-        :param log: pyspark DataFrame
-        """
-        data = log.toPandas()[["user_idx", "item_idx", "relevance"]]
-        user_num = data["user_idx"].max() + 1
-        item_num = data["item_idx"].max() + 1
-
-        train_data = data.sample(frac=0.9, random_state=16)
-        test_data = data.drop(train_data.index)
-        appropriate_users = (
-            train_data["user_idx"]
-            .value_counts()[train_data["user_idx"].value_counts() > 10]
-            .index
-        )
-
-        train_matrix = sp.dok_matrix((user_num, item_num), dtype=np.float32)
-        train_matrix[train_data["user_idx"], train_data["item_idx"]] = train_data["relevance"]
-
-        test_matrix = sp.dok_matrix((user_num, item_num), dtype=np.float32)
-        test_matrix[test_data["user_idx"], test_data["item_idx"]] = test_data["relevance"]
-
-        return (
-            train_matrix,
-            test_data,
-            test_matrix,
-            item_num,
-            appropriate_users,
-        )
 
     @staticmethod
     def hit_metric(recommended, actual):
@@ -796,20 +765,17 @@ class DDPG(TorchRecommender):
         user_features: Optional[DataFrame] = None,
         item_features: Optional[DataFrame] = None,
     ) -> None:
-        (
-            train_matrix,
-            _,
-            test_matrix,
-            _,
-            appropriate_users,
-        ) = self._preprocess_log(log)
+        data = log.toPandas()[["user_idx", "item_idx", "relevance"]]
+        train_matrix = sp.dok_matrix((self.user_num, self.item_num), dtype=np.float32)
+        train_matrix[data["user_idx"], data["item_idx"]] = data["relevance"]
+
         self.model.environment.update_env(
             matrix=train_matrix  # , item_count=current_item_num
         )
-        self.model.test_environment.update_env(
-            matrix=test_matrix  # , item_count=current_item_num
-        )
-        users = np.random.permutation(appropriate_users)
+        # self.model.test_environment.update_env(
+        #     matrix=test_matrix  # , item_count=current_item_num
+        # )
+        users = np.random.permutation(self.user_num)
 
         policy_optimizer = Ranger(
             self.model.parameters(),
@@ -840,8 +806,11 @@ class DDPG(TorchRecommender):
         rewards = []
         step = 0
 
+        import time
+        tracked_time, tracked_cnt = 0, 0.001
         for user in tqdm.tqdm(users):
             user, memory = self.model.environment.reset(user)
+
             self.ou_noise.reset()
             for user_step in range(len(self.model.environment.related_items)):
                 action_emb = self.model(user, memory)
@@ -859,16 +828,22 @@ class DDPG(TorchRecommender):
                 )
                 rewards.append(reward)
 
-                if len(self.replay_buffer) > self.batch_size:
+                if len(self.replay_buffer) > self.batch_size and step % 4 == 0:
+                    st_time = time.time()
                     self._run_train_step(
                         policy_optimizer,
                         value_optimizer,
                         step=step,
                     )
+                    tracked_time += time.time() - st_time
+                    tracked_cnt += 1
 
-                if step % 10000 == 0 and step > 0:
-                    self._save_model(self.log_dir / f"model_{step}.pt")
+                # if step % 200000 == 0 and step > 0:
+                #     self._save_model(self.log_dir / f"model_{step}.pt")
                 step += 1
+
+        print(f'Steps: {step}')
+        print(f'Tracked time: {tracked_time / tracked_cnt:.6f}; tracked cnt: {tracked_cnt:.1f}')
 
         self._save_model(self.log_dir / "model_final.pt")
         self._save_memory()

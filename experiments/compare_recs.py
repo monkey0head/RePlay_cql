@@ -450,6 +450,9 @@ def parse_args():
 
 
 def main():
+    os.environ['OMP_NUM_THREADS'] = '1'
+    os.environ['MKL_NUM_THREADS'] = '1'
+
     # shenanigans to turn off countless warnings to clear output
     logging.captureWarnings(True)
     warnings.filterwarnings("ignore", category=UserWarning, append=True)
