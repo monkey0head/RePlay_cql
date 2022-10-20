@@ -484,7 +484,7 @@ class DDPG(TorchRecommender):
 
     def __init__(
         self,
-        noise_sigma: float = 0.4,
+        noise_sigma: float = 0.2,
         noise_theta: float = 0.1,
         seed: int = 9,
         user_num: int = 5000,
