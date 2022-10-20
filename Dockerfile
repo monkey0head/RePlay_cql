@@ -50,9 +50,9 @@ RUN mamba init zsh; \
     mamba activate recsys; \
     # auto activate env on login
     echo "mamba activate recsys" >> /root/.zshrc; \
-    mamba install pytorch -c pytorch -y; \
+#     mamba install pytorch -c pytorch -y; \
     mamba install requests pypandoc optuna tabulate -y; \
     pip install datatable; \
     poetry install; \
-    pip install -U d3rlpy rs_datasets pytorch_ranger;
-
+    pip install -U d3rlpy rs_datasets pytorch_ranger; \
+    mamba clean -a -y
