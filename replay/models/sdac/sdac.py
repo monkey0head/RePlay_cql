@@ -30,6 +30,7 @@ class SDAC(RLRecommender):
             action_randomization_scale: float = 0.,
             use_negative_events: bool = False,
             rating_based_reward: bool = False,
+            rating_actions: bool = False,
             reward_top_k: bool = False,
             epoch_callback: Optional[Callable[[int, RLRecommender], None]] = None,
 
@@ -87,6 +88,7 @@ class SDAC(RLRecommender):
             action_randomization_scale=action_randomization_scale,
             use_negative_events=use_negative_events,
             rating_based_reward=rating_based_reward,
+            rating_actions=rating_actions,
             reward_top_k=reward_top_k,
             epoch_callback=epoch_callback
         )

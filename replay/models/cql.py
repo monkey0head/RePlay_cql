@@ -27,6 +27,7 @@ class RLRecommender(Recommender):
     action_randomization_scale: float
     use_negative_events: bool
     rating_based_reward: bool
+    rating_actions: bool
     reward_top_k: bool
 
     model: LearnableBase
@@ -41,6 +42,7 @@ class RLRecommender(Recommender):
             action_randomization_scale: float = 0.,
             use_negative_events: bool = False,
             rating_based_reward: bool = False,
+            rating_actions: bool = False,
             reward_top_k: bool = True,
             epoch_callback: Callable[[int, 'RLRecommender'], None] = None
     ):
@@ -51,9 +53,12 @@ class RLRecommender(Recommender):
         self.action_randomization_scale = action_randomization_scale
         self.use_negative_events = use_negative_events
         self.rating_based_reward = rating_based_reward
+        self.rating_actions = rating_actions
         self.reward_top_k = reward_top_k
 
         self.epoch_callback = epoch_callback
+        self.train = None
+        self.fitter = None
 
     def _predict(
         self,
@@ -94,10 +99,16 @@ class RLRecommender(Recommender):
         user_features: Optional[DataFrame] = None,
         item_features: Optional[DataFrame] = None,
     ) -> None:
-        train: MDPDataset = self._prepare_data(log)
-        for epoch, metrics in self.model.fitter(train, n_epochs=self.n_epochs):
-            if self.epoch_callback is not None:
-                self.epoch_callback(epoch, self)
+        if self.train is None:
+            self.train: MDPDataset = self._prepare_data(log)
+
+        if self.fitter is None:
+            self.fitter = self.model.fitter(self.train, n_epochs=self.n_epochs)
+
+        try:
+            next(self.fitter)
+        except StopIteration:
+            pass
 
     raw_rating_to_reward_rescale = {
         1.0: -1.0,
@@ -154,15 +165,17 @@ class RLRecommender(Recommender):
         terminals[user_terminal_idxs] = 1
         user_logs['terminals'] = terminals
 
+        actions = user_logs['relevance'].to_numpy()
+        if not self.rating_actions:
+            actions = (actions >= 3).astype(int)
+
         # cannot set zero scale as d3rlpy will treat transitions as discrete :/
         action_randomization_scale = self.action_randomization_scale + 1e-4
         action_randomization = np.random.randn(len(user_logs)) * action_randomization_scale
 
         train_dataset = MDPDataset(
             observations=np.array(user_logs[['user_idx', 'item_idx']]),
-            actions=np.array(
-                user_logs['relevance'] + action_randomization
-            )[:, None],
+            actions=(actions + action_randomization)[:, None],
             rewards=user_logs['rewards'],
             terminals=user_logs['terminals']
         )
@@ -292,6 +305,7 @@ class CQL(RLRecommender):
             action_randomization_scale: float = 0.,
             use_negative_events: bool = False,
             rating_based_reward: bool = False,
+            rating_actions: bool = False,
             reward_top_k: bool = False,
             epoch_callback: Optional[Callable[[int, RLRecommender], None]] = None,
 
@@ -362,6 +376,7 @@ class CQL(RLRecommender):
             action_randomization_scale=action_randomization_scale,
             use_negative_events=use_negative_events,
             rating_based_reward=rating_based_reward,
+            rating_actions=rating_actions,
             reward_top_k=reward_top_k,
             epoch_callback=epoch_callback
         )

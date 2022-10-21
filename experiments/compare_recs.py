@@ -171,6 +171,7 @@ class BareRatingsRunner:
     action_randomization_scale: float
     use_negative_events: bool
     rating_based_reward: bool
+    rating_actions: bool
     reward_top_k: bool
 
     logger: logging.Logger
@@ -185,10 +186,11 @@ class BareRatingsRunner:
             algorithms: list[str], epochs: list[int], label: str,
             k: Union[int, list[int]], test_ratio: float,
             action_randomization_scale: float, use_negative_events: bool,
-            rating_based_reward: bool, reward_top_k: bool,
+            rating_based_reward: bool, reward_top_k: bool, rating_actions: bool,
             seed: int = None
     ):
         self.logger = logging.getLogger("replay")
+        self.label = label
 
         init_spark_session(memory, partitions)
         self.print_time('===> Spark initialized')
@@ -198,6 +200,9 @@ class BareRatingsRunner:
         self.dataset = RatingsDataset(dataset_name, core=core, test_ratio=test_ratio)
         self.logger.info(msg='train info:\n\t' + get_log_info(self.dataset.binary_train))
         self.logger.info(msg='test info:\n\t' + get_log_info(self.dataset.test))
+
+        self.results_label = f'{self.label}.{self.dataset.fullname}.md'
+        self.logger.info(msg=f'Results are saved to \n\t{self.results_label}')
         self.print_time('===> Dataset prepared')
 
         self.seed = seed if seed is not None else np.random.default_rng().integers(1_000_000)
@@ -208,9 +213,8 @@ class BareRatingsRunner:
         self.action_randomization_scale = action_randomization_scale
         self.use_negative_events = use_negative_events
         self.rating_based_reward = rating_based_reward
+        self.rating_actions = rating_actions
         self.reward_top_k = reward_top_k
-
-        self.label = label
 
         self.experiment = self.build_experiment()
         self.print_time('===> Experiment initialized')
@@ -222,15 +226,13 @@ class BareRatingsRunner:
 
     def run(self):
         from replay.models import TorchRecommender
-
-        results_label = f'{self.label}.{self.dataset.fullname}.md'
-        self.logger.info(msg=f'Results are saved to \n\t{results_label}')
+        from replay.models.cql import RLRecommender
 
         for model_name in tqdm.tqdm(self.models.keys(), desc='Model'):
             model, train = self.models[model_name]
             self.logger.info(msg='{} started'.format(model_name))
 
-            if isinstance(model, TorchRecommender):
+            if isinstance(model, TorchRecommender) or isinstance(model, RLRecommender):
                 n_epochs = self.epochs[-1]
                 schedule = self.epochs
             else:
@@ -275,54 +277,10 @@ class BareRatingsRunner:
                 results_md = self.experiment.results.sort_values(
                     f'NDCG@{self.k}', ascending=False
                 ).to_markdown()
-                with open(results_label, 'w') as text_file:
+                with open(self.results_label, 'w') as text_file:
                     text_file.write(results_md)
 
         self.print_time('===> Experiment finished')
-
-    def fit_predict_add_res(
-            self,
-            name: str, model: Recommender, experiment: Experiment,
-            train: pd.DataFrame, top_k: int, test_users: pd.DataFrame
-    ):
-        """
-        Run fit_predict for the `model`, measure time on fit_predict and evaluate metrics
-        """
-        from replay.models import TorchRecommender
-        from replay.models.cql import RLRecommender
-        if isinstance(model, TorchRecommender) or isinstance(model, RLRecommender):
-            n_epochs = self.epochs[-1]
-            schedule = self.epochs
-        else:
-            n_epochs = 1
-            schedule = [1]
-
-        fit_time, predict_time, metric_time = 0, 0, 0
-        for epoch in range(n_epochs):
-            epoch += 1
-
-            start_time = time.time()
-            model.fit(log=train)
-            fit_time += time.time() - start_time
-
-            if epoch not in schedule:
-                continue
-
-            start_time = time.time()
-            pred = model.predict(log=train, k=top_k, users=test_users).cache()
-            predict_time += time.time() - start_time
-
-            _name = f'{name}.{epoch}' if epoch > 1 else name
-
-            start_time = time.time()
-            experiment.add_result(_name, pred)
-            metric_time += time.time() - start_time
-
-            experiment.results.loc[_name, 'fit_time'] = fit_time
-            experiment.results.loc[_name, 'predict_time'] = predict_time
-            experiment.results.loc[_name, 'metric_time'] = metric_time
-            experiment.results.loc[_name, 'full_time'] = (fit_time + predict_time + metric_time)
-            pred.unpersist()
 
     def build_experiment(self) -> Experiment:
         return Experiment(self.dataset.test, {
@@ -342,6 +300,7 @@ class BareRatingsRunner:
                 action_randomization_scale=self.action_randomization_scale,
                 use_negative_events=self.use_negative_events,
                 rating_based_reward=self.rating_based_reward,
+                rating_actions=self.rating_actions,
                 reward_top_k=self.reward_top_k,
                 epoch_callback=None
             )
@@ -444,6 +403,7 @@ def parse_args():
     parser.add_argument('--scale', dest='action_randomization_scale', type=float, default=0.1)
     parser.add_argument('--neg', dest='use_negative_events', action='store_true', default=False)
     parser.add_argument('--rat', dest='rating_based_reward', action='store_true', default=False)
+    parser.add_argument('--rat_act', dest='rating_actions', action='store_true', default=False)
     parser.add_argument('--top', dest='reward_top_k', action='store_true', default=False)
 
     return parser.parse_args()
