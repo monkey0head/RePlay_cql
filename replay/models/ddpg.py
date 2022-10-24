@@ -192,12 +192,13 @@ class OUNoise:
         )
         if self.noise_type == "ou":
             ou_state = self.evolve_state()
-            noisy_action = np.array([action + ou_state])
+            return torch.from_numpy(np.array([action + ou_state])).float()
         elif self.noise_type == "gauss":
-            noisy_action = np.array([self.sigma * np.random.randn(self.action_dim)])
+            return torch.from_numpy(
+                np.array([self.sigma * np.random.randn(self.action_dim)])
+            ).float()
         else:
             raise ValueError("noise_type must be one of ['ou', 'gauss']")
-        return torch.from_numpy(noisy_action).float()
 
 
 class ActorDRR(nn.Module):
@@ -319,6 +320,7 @@ class Env:
         :param matrix: sparse matrix with users-item ratings
         :param user_id: users_id number
         :param related_items: relevant items for user_id
+        :param nonrelated_items: non-relevant items for user_id
         :param num_rele: number of related_items
         :param available_items: non-seen items
         """
@@ -330,6 +332,7 @@ class Env:
         self.matrix = np.ones([user_num, item_num])
         self.user_id = 0
         self.related_items = np.arange(item_num)
+        self.nonrelated_items = np.arange(item_num)
         self.num_rele = len(self.related_items)
         self.available_items = list(np.zeros(self.num_rele * 2))
 
@@ -358,8 +361,7 @@ class Env:
         self.available_items[::2] = self.related_items
         self.available_items[1::2] = self.nonrelated_items
 
-        user_id_ = np.array([self.user_id])
-        return torch.from_numpy(user_id_), torch.from_numpy(
+        return torch.from_numpy(np.array([self.user_id])), torch.from_numpy(
             self.memory[[self.user_id], :]
         )
 
@@ -392,9 +394,8 @@ class Env:
                 np.array([reward]),
             )
 
-        user_id_ = np.array([self.user_id])
         return (
-            torch.from_numpy(user_id_),
+            torch.from_numpy(np.array([self.user_id])),
             torch.from_numpy(self.memory[[self.user_id], :]),
             reward,
             0,
@@ -464,7 +465,7 @@ class DDPG(TorchRecommender):
     This implementation enhanced by more advanced noise strategy.
     """
 
-    batch_size: int = 512
+    batch_size: int = 1024
     embedding_dim: int = 8
     hidden_dim: int = 16
     value_lr: float = 1e-5
@@ -475,19 +476,19 @@ class DDPG(TorchRecommender):
     memory_size: int = 5
     min_value: int = -10
     max_value: int = 10
-    buffer_size: int = 1000000
+    buffer_size: int = 100000
     _search_space = {
         "noise_sigma": {"type": "uniform", "args": [0.1, 0.6]},
         "noise_theta": {"type": "uniform", "args": [0.1, 0.4]},
     }
 
     def __init__(
-        self,
-        noise_sigma: float = 0.4,
+        self, *,
+        user_num: int,
+        item_num: int,
+        noise_sigma: float = 0.2,
         noise_theta: float = 0.1,
         seed: int = 9,
-        user_num: int = 5000,
-        item_num: int = 200000,
         log_dir: str = "logs/tmp",
     ):
         """
@@ -624,50 +625,13 @@ class DDPG(TorchRecommender):
     def _get_data_loader(data, item_num, matrix):
         dataset = EvalDataset(data, item_num, matrix)
         loader = td.DataLoader(
-            dataset, batch_size=100, shuffle=False, num_workers=16
+            dataset, batch_size=100, shuffle=False, num_workers=1
         )
         return loader
 
     @staticmethod
     def _get_beta(idx, beta_start=0.4, beta_steps=100000):
         return min(1.0, beta_start + idx * (1.0 - beta_start) / beta_steps)
-
-    @staticmethod
-    def _preprocess_log(log):
-        """
-        :param log: pyspark DataFrame
-        """
-        data = log.toPandas()[["user_idx", "item_idx", "relevance"]]
-        user_num = data["user_idx"].max() + 1
-        item_num = data["item_idx"].max() + 1
-
-        train_data = data.sample(frac=0.9, random_state=16)
-        appropriate_users = (
-            train_data["user_idx"]
-            .value_counts()[train_data["user_idx"].value_counts() > 10]
-            .index
-        )
-        test_data = data.drop(train_data.index).values.tolist()
-        train_data = train_data.values.tolist()
-
-        train_mat = defaultdict(float)
-        test_mat = defaultdict(float)
-        for user, item, rel in train_data:
-            train_mat[user, item] = rel
-        for user, item, rel in test_data:
-            test_mat[user, item] = rel
-        train_matrix = sp.dok_matrix((user_num, item_num), dtype=np.float32)
-        dict.update(train_matrix, train_mat)
-        test_matrix = sp.dok_matrix((user_num, item_num), dtype=np.float32)
-        dict.update(test_matrix, test_mat)
-
-        return (
-            train_matrix,
-            test_data,
-            test_matrix,
-            item_num,
-            appropriate_users,
-        )
 
     @staticmethod
     def hit_metric(recommended, actual):
@@ -688,7 +652,7 @@ class DDPG(TorchRecommender):
             return np.reciprocal(np.log2(index + 2))
         return 0
 
-    # pylint: disable=arguments-differ,too-many-locals
+    # pylint: disable=arguments-differ,too-many-locals,arguments-renamed
     def _run_train_step(
         self,
         policy_optimizer,
@@ -801,20 +765,17 @@ class DDPG(TorchRecommender):
         user_features: Optional[DataFrame] = None,
         item_features: Optional[DataFrame] = None,
     ) -> None:
-        (
-            train_matrix,
-            _,
-            test_matrix,
-            _,
-            appropriate_users,
-        ) = self._preprocess_log(log)
+        data = log.toPandas()[["user_idx", "item_idx", "relevance"]]
+        train_matrix = sp.dok_matrix((self.user_num, self.item_num), dtype=np.float32)
+        train_matrix[data["user_idx"], data["item_idx"]] = data["relevance"]
+
         self.model.environment.update_env(
             matrix=train_matrix  # , item_count=current_item_num
         )
-        self.model.test_environment.update_env(
-            matrix=test_matrix  # , item_count=current_item_num
-        )
-        users = np.random.permutation(appropriate_users)
+        # self.model.test_environment.update_env(
+        #     matrix=test_matrix  # , item_count=current_item_num
+        # )
+        users = np.random.permutation(self.user_num)
 
         policy_optimizer = Ranger(
             self.model.parameters(),
@@ -845,34 +806,44 @@ class DDPG(TorchRecommender):
         rewards = []
         step = 0
 
+        import time
+        tracked_time, tracked_cnt = 0, 0.001
         for user in tqdm.tqdm(users):
             user, memory = self.model.environment.reset(user)
+
             self.ou_noise.reset()
             for user_step in range(len(self.model.environment.related_items)):
                 action_emb = self.model(user, memory)
                 action_emb = self.ou_noise.get_action(
                     to_np(action_emb)[0], user_step
                 )
-                available_items = np.array(self.model.environment.available_items)
                 action = self.model.get_action(
                     action_emb,
-                    torch.from_numpy(available_items).long(),
+                    torch.from_numpy(
+                        np.array(self.model.environment.available_items)
+                    ).long(),
                 )
                 user, memory, reward, _ = self.model.environment.step(
                     action, action_emb, self.replay_buffer
                 )
                 rewards.append(reward)
 
-                if len(self.replay_buffer) > self.batch_size:
+                if len(self.replay_buffer) > self.batch_size and step % 4 == 0:
+                    st_time = time.time()
                     self._run_train_step(
                         policy_optimizer,
                         value_optimizer,
                         step=step,
                     )
+                    tracked_time += time.time() - st_time
+                    tracked_cnt += 1
 
-                if step % 10000 == 0 and step > 0:
-                    self._save_model(self.log_dir / f"model_{step}.pt")
+                # if step % 200000 == 0 and step > 0:
+                #     self._save_model(self.log_dir / f"model_{step}.pt")
                 step += 1
+
+        print(f'Steps: {step}')
+        print(f'Tracked time: {tracked_time / tracked_cnt:.6f}; tracked cnt: {tracked_cnt:.1f}')
 
         self._save_model(self.log_dir / "model_final.pt")
         self._save_memory()

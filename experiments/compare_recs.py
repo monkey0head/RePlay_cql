@@ -29,21 +29,38 @@ class RatingsDataset:
     category: str
 
     log: DataFrame
+    users: DataFrame
+    items: DataFrame
+
     binary_train: DataFrame
     pos_binary_train: DataFrame
     raw_train: DataFrame
     test: DataFrame
     test_users: DataFrame
 
-    def __init__(self, name: str, test_ratio: float):
+    def __init__(self, name: str, core: int, test_ratio: float):
         self.name, self.category = name.split('.')
+        self.log = self._read_dataset(self.name, self.category)
+        self._reindex()
 
-        if self.name == 'MovieLens':
+        if core > 0:
+            self._filter_rares(min_k_ratings=core)
+
+        # self.log is now ready to be used
+        self.users = self.log.select('user_idx').distinct().cache()
+        self.items = self.log.select('item_idx').distinct().cache()
+
+        # prepare train/test datasets and store to corresponding attributes
+        self._build_train_test(test_ratio=test_ratio)
+
+    @staticmethod
+    def _read_dataset(name: str, category: str):
+        if name == 'MovieLens':
             from rs_datasets import MovieLens
-            ds = MovieLens(version=self.category)
-        elif self.name == 'Amazon':
+            ds = MovieLens(version=category)
+        elif name == 'Amazon':
             from rs_datasets import Amazon
-            ds = Amazon(category=self.category)
+            ds = Amazon(category=category)
         else:
             raise KeyError()
 
@@ -53,17 +70,29 @@ class RatingsDataset:
             'relevance': 'rating',
             'timestamp': 'timestamp'
         }
-        pd_log = ds.ratings
 
-        data_preparator = DataPreparator()
-        log = data_preparator.transform(columns_mapping=col_mapping, data=pd_log)
+        return (
+            DataPreparator()
+            .transform(columns_mapping=col_mapping, data=ds.ratings)
+            # rename ids to `idx` for simplicity
+            .withColumnRenamed('user_id', 'user_idx')
+            .withColumnRenamed('item_id', 'item_idx')
+            .cache()
+        )
 
-        indexer = Indexer()
-        indexer.fit(users=log.select('user_id'), items=log.select('item_id'))
+    def _reindex(self):
+        """Makes ids in log start from 0 and be consecutive."""
+        log = self.log.cache()
+        users = log.select('user_idx').distinct().cache()
+        items = log.select('item_idx').distinct().cache()
+
+        indexer = Indexer(user_col='user_idx', item_col='item_idx')
+        indexer.fit(users=users, items=items)
         self.log = indexer.transform(log)
 
         log.unpersist()
-        self._build_train_test(test_ratio=test_ratio)
+        users.unpersist()
+        items.unpersist()
 
     def _build_train_test(self, test_ratio: float):
         log = self.log.cache()
@@ -94,6 +123,38 @@ class RatingsDataset:
         self.test = test
         self.test_users = test_users
 
+    def _filter_rares(self, min_k_ratings: int):
+        log = self.log.cache()
+        # take approximate k-core filtering approach iteratively cleaning the data
+        # NB: the sufficient number of iterations found empirically
+        for _ in range(2):
+            for col in ['item_idx', 'user_idx']:
+                filtered_log = RatingsDataset._filter_rares_by_column(log, col, min_k_ratings)
+                filtered_log = filtered_log.cache()
+                filtered_log.count()
+
+                log.unpersist()
+                log = filtered_log
+
+        self.log = log
+        # reindex as we filtered users and items
+        self._reindex()
+
+    @staticmethod
+    def _filter_rares_by_column(log: DataFrame, col: str, min_k_ratings: int) -> DataFrame:
+        filtered_ids = (
+            log.select(col)
+            .groupBy(col).count()
+            .filter(sf.col('count') >= min_k_ratings)
+            # .select(col)
+            .select(sf.col(col).alias('filtered_id'))
+        )
+        return (
+            log
+            .join(filtered_ids, sf.col(col) == sf.col('filtered_id'), 'inner')
+            .drop('filtered_id')
+        )
+
     @property
     def fullname(self):
         return f'{self.name}.{self.category}'
@@ -110,6 +171,7 @@ class BareRatingsRunner:
     action_randomization_scale: float
     use_negative_events: bool
     rating_based_reward: bool
+    rating_actions: bool
     reward_top_k: bool
 
     logger: logging.Logger
@@ -119,24 +181,28 @@ class BareRatingsRunner:
 
     def __init__(
             self, *,
-            dataset_name: str,
+            dataset_name: str, core: int,
             partitions: float, memory: float, gpu: int,
             algorithms: list[str], epochs: list[int], label: str,
             k: Union[int, list[int]], test_ratio: float,
             action_randomization_scale: float, use_negative_events: bool,
-            rating_based_reward: bool, reward_top_k: bool,
+            rating_based_reward: bool, reward_top_k: bool, rating_actions: bool,
             seed: int = None
     ):
         self.logger = logging.getLogger("replay")
+        self.label = label
 
         init_spark_session(memory, partitions)
         self.print_time('===> Spark initialized')
 
         self.gpu = gpu if gpu >= 0 and torch.cuda.is_available() else False
 
-        self.dataset = RatingsDataset(dataset_name, test_ratio=test_ratio)
+        self.dataset = RatingsDataset(dataset_name, core=core, test_ratio=test_ratio)
         self.logger.info(msg='train info:\n\t' + get_log_info(self.dataset.binary_train))
         self.logger.info(msg='test info:\n\t' + get_log_info(self.dataset.test))
+
+        self.results_label = f'{self.label}.{self.dataset.fullname}.md'
+        self.logger.info(msg=f'Results are saved to \n\t{self.results_label}')
         self.print_time('===> Dataset prepared')
 
         self.seed = seed if seed is not None else np.random.default_rng().integers(1_000_000)
@@ -147,9 +213,8 @@ class BareRatingsRunner:
         self.action_randomization_scale = action_randomization_scale
         self.use_negative_events = use_negative_events
         self.rating_based_reward = rating_based_reward
+        self.rating_actions = rating_actions
         self.reward_top_k = reward_top_k
-
-        self.label = label
 
         self.experiment = self.build_experiment()
         self.print_time('===> Experiment initialized')
@@ -160,55 +225,62 @@ class BareRatingsRunner:
         self.logger.info(msg=f'{text}: \t{time.time() - self.init_time:.3f}')
 
     def run(self):
-        results_label = f'{self.label}.{self.dataset.fullname}.md'
-        self.logger.info(msg=f'Results are saved to \n\t{results_label}')
+        from replay.models import TorchRecommender
+        from replay.models.cql import RLRecommender
 
         for model_name in tqdm.tqdm(self.models.keys(), desc='Model'):
             model, train = self.models[model_name]
             self.logger.info(msg='{} started'.format(model_name))
 
-            self.fit_predict_add_res(
-                model_name, model, self.experiment,
-                train=train, top_k=self.k, test_users=self.dataset.test_users
-            )
-            print(
-                self.experiment.results[[
-                    f'NDCG@{self.k}', f'MRR@{self.k}', f'Coverage@{self.k}', 'fit_time'
-                ]].sort_values(f'NDCG@{self.k}', ascending=False)
-            )
+            if isinstance(model, TorchRecommender) or isinstance(model, RLRecommender):
+                n_epochs = self.epochs[-1]
+                schedule = self.epochs
+            else:
+                n_epochs = 1
+                schedule = [1]
 
-            results_md = self.experiment.results.sort_values(
-                f'NDCG@{self.k}', ascending=False
-            ).to_markdown()
-            with open(results_label, 'w') as text_file:
-                text_file.write(results_md)
+            fit_time, predict_time, metric_time = 0, 0, 0
+            for epoch in range(n_epochs):
+                epoch += 1
+
+                start_time = time.time()
+                model.fit(log=train)
+                fit_time += time.time() - start_time
+
+                if epoch not in schedule:
+                    continue
+
+                start_time = time.time()
+                pred = model.predict(log=train, k=self.k, users=self.dataset.test_users).cache()
+                predict_time += time.time() - start_time
+
+                name = f'{model_name}.{epoch}' if epoch > 1 else model_name
+
+                start_time = time.time()
+                self.experiment.add_result(name, pred)
+                metric_time += time.time() - start_time
+
+                self.experiment.results.loc[name, 'fit_time'] = fit_time
+                self.experiment.results.loc[name, 'predict_time'] = predict_time
+                self.experiment.results.loc[name, 'metric_time'] = metric_time
+                self.experiment.results.loc[name, 'full_time'] = (
+                        fit_time + predict_time + metric_time
+                )
+                pred.unpersist()
+
+                print(
+                    self.experiment.results[[
+                        f'NDCG@{self.k}', f'MRR@{self.k}', f'Coverage@{self.k}', 'fit_time'
+                    ]].sort_values(f'NDCG@{self.k}', ascending=False)
+                )
+
+                results_md = self.experiment.results.sort_values(
+                    f'NDCG@{self.k}', ascending=False
+                ).to_markdown()
+                with open(self.results_label, 'w') as text_file:
+                    text_file.write(results_md)
 
         self.print_time('===> Experiment finished')
-
-    def fit_predict_add_res(
-            self,
-            name: str, model: Recommender, experiment: Experiment,
-            train: pd.DataFrame, top_k: int, test_users: pd.DataFrame
-    ):
-        """
-        Run fit_predict for the `model`, measure time on fit_predict and evaluate metrics
-        """
-        start_time = time.time()
-
-        model.fit(log=train)
-        fit_time = time.time() - start_time
-
-        pred = model.predict(log=train, k=top_k, users=test_users).cache()
-        predict_time = time.time() - start_time - fit_time
-
-        experiment.add_result(name, pred)
-        metric_time = time.time() - start_time - fit_time - predict_time
-
-        experiment.results.loc[name, 'fit_time'] = fit_time
-        experiment.results.loc[name, 'predict_time'] = predict_time
-        experiment.results.loc[name, 'metric_time'] = metric_time
-        experiment.results.loc[name, 'full_time'] = (fit_time + predict_time + metric_time)
-        pred.unpersist()
 
     def build_experiment(self) -> Experiment:
         return Experiment(self.dataset.test, {
@@ -228,8 +300,8 @@ class BareRatingsRunner:
                 action_randomization_scale=self.action_randomization_scale,
                 use_negative_events=self.use_negative_events,
                 rating_based_reward=self.rating_based_reward,
+                rating_actions=self.rating_actions,
                 reward_top_k=self.reward_top_k,
-                epoch_callback=None
             )
 
         algorithms = list(map(str.lower, algorithms))
@@ -246,8 +318,11 @@ class BareRatingsRunner:
                 models['CRR'] = build_rl_recommender(CRR), self.dataset.raw_train
             elif alg == 'ddpg':
                 from replay.models.ddpg import DDPG
+                # full-log nums => I take an upper-bound
+                user_num = self.dataset.users.count()
+                item_num = self.dataset.items.count()
                 models['DDPG'] = (
-                    DDPG(seed=self.seed, user_num=1000, item_num=2500),
+                    DDPG(user_num=user_num, item_num=item_num),
                     self.dataset.pos_binary_train
                 )
             elif alg == 'als':
@@ -320,18 +395,23 @@ def parse_args():
     parser.add_argument('--algos', dest='algorithms', nargs='*', type=str, default=[])
     parser.add_argument('--gpu', dest='gpu', type=int, default=-1)
     parser.add_argument('--seed', dest='seed', type=int, default=1234)
+    parser.add_argument('--core', dest='core', type=int, default=0)
 
     # experiments
     parser.add_argument('--label', dest='label', default=datetime.datetime.now())
     parser.add_argument('--scale', dest='action_randomization_scale', type=float, default=0.1)
     parser.add_argument('--neg', dest='use_negative_events', action='store_true', default=False)
     parser.add_argument('--rat', dest='rating_based_reward', action='store_true', default=False)
+    parser.add_argument('--rat_act', dest='rating_actions', action='store_true', default=False)
     parser.add_argument('--top', dest='reward_top_k', action='store_true', default=False)
 
     return parser.parse_args()
 
 
 def main():
+    # os.environ['OMP_NUM_THREADS'] = '1'
+    # os.environ['MKL_NUM_THREADS'] = '1'
+
     # shenanigans to turn off countless warnings to clear output
     logging.captureWarnings(True)
     warnings.filterwarnings("ignore", category=UserWarning, append=True)
