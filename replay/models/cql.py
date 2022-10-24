@@ -32,8 +32,6 @@ class RLRecommender(Recommender):
 
     model: LearnableBase
 
-    epoch_callback: Optional[Callable[[int, 'RLRecommender'], None]] = None
-
     def __init__(
             self, *,
             model: LearnableBase,
@@ -43,8 +41,7 @@ class RLRecommender(Recommender):
             use_negative_events: bool = False,
             rating_based_reward: bool = False,
             rating_actions: bool = False,
-            reward_top_k: bool = True,
-            epoch_callback: Callable[[int, 'RLRecommender'], None] = None
+            reward_top_k: bool = True
     ):
         super().__init__()
         self.model = model
@@ -56,7 +53,6 @@ class RLRecommender(Recommender):
         self.rating_actions = rating_actions
         self.reward_top_k = reward_top_k
 
-        self.epoch_callback = epoch_callback
         self.train = None
         self.fitter = None
 
@@ -77,7 +73,7 @@ class RLRecommender(Recommender):
         users = users.toPandas().to_numpy().flatten()
         items = items.toPandas().to_numpy().flatten()
 
-        # TODO: consider size-dependent batch prediction instead of by user
+        # TODO: rewrite to applyInPandas with predictUserPairs parallel batch execution
         user_predictions = []
         for user in users:
             user_item_pairs = pd.DataFrame({
