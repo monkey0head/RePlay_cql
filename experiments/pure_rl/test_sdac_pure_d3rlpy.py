@@ -1,3 +1,6 @@
+import wandb
+wandb.init(project="RecommendationsSDAC", group = "MovieLens_SDAC")
+
 from rs_datasets import MovieLens
 from d3rlpy.base import LearnableBase
 from d3rlpy.dataset import MDPDataset
@@ -17,7 +20,6 @@ import d3rlpy
 import torch
 import torch.nn.functional as F
 from torch import nn
-import wandb
 
 def _prepare_data(log: DataFrame) -> MDPDataset:
         use_negative_events = True #False
