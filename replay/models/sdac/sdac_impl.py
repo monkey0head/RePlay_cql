@@ -214,4 +214,4 @@ class SDAC(SAC):
         self._impl.build()
 
     def get_action_type(self) -> ActionSpace:
-        return ActionSpace.CONTINUOUS
+        return ActionSpace.DISCRETE

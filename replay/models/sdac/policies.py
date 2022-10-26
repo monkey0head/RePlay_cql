@@ -35,17 +35,17 @@ class GumbelPolicy(CategoricalPolicy):
 
         dist = self.dist(x)
         if deterministic:
-            picked_actions = dist.hard_sample().argmax(dim=1)
+            picked_actions = dist.sample()
+            picked_actions_hard = (torch.max(picked_actions, dim=-1, keepdim=True)[0] == picked_actions).float()
+            picked_actions = (picked_actions_hard - picked_actions).detach() + picked_actions
+            picked_actions = picked_actions.argmax(axis = 1)
         else:
             picked_actions, log_prob = dist.sample_with_log_prob()
-            # picked_actions = picked_actions.argmax(dim=1)
-            # print('picked_actions', picked_actions)
-            # print('log_prob', log_prob)
-            if with_log_prob:
-                return picked_actions, log_prob
+            picked_actions_hard = (torch.max(picked_actions, dim=-1, keepdim=True)[0] == picked_actions).float()
+            picked_actions = (picked_actions_hard - picked_actions).detach() + picked_actions
 
-        # print('policy forward', picked_actions.dim())
-        return picked_actions
+        #    print(picked_actions)
+        return (picked_actions, log_prob) if with_log_prob else picked_actions
 
     def dist(self, x: torch.Tensor) -> GumbelDistribution:
         h = self._encoder(x)
