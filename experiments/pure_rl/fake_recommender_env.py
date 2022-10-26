@@ -55,8 +55,10 @@ class FakeRecomenderEnv(gym.Env):
         ob = (self.current_episode['user_id'].values[self.steps], 
                 self.current_episode['item_id'].values[self.steps])
         self.steps += 1
+        if self.episode_num == len(self.episodes):
+        	done = True
         if len(self.current_episode['user_id']) == self.steps:
-            done = True
+           # done = True
           #  print(len(self.user_hist), len(self.item_hist), len(self.relevance_hist))
             pred_df = pd.DataFrame({'user_id': self.user_hist, 'item_hist': self.item_hist,
                                     'relevance': self.relevance_hist})
@@ -64,12 +66,15 @@ class FakeRecomenderEnv(gym.Env):
             reward = ndcg( self.top_k, pred_top_k['relevance'].values, self.original['rating'].values)
             mape_ = mape( self.top_k, pred_top_k['relevance'].values, self.original['rating'].values)
             wandb.log({"episode": self.total_episodes, "NDCG": reward, "MAP": mape_})
-            ob = []
+            ob = []            
+            ob = self.reset()
         else:
             self.user_hist.append(self.current_episode['user_id'].values[self.steps])
-            self.item_hist.append(self.current_episode['item_id'].values[self.steps])
-        
+            self.item_hist.append(self.current_episode['item_id'].values[self.steps])     
         return np.asarray(ob), reward, done, {}
+        
+  #  def fake_reset():
+    
     
     def reset(self):
         self.user_hist = []
