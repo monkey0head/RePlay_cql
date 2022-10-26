@@ -64,6 +64,7 @@ class FakeRecomenderEnv(gym.Env):
         	self.total_ndsg = []
         	self.total_mape = []
         	self.run += 1
+        	self.episode_num = 0
         	
         if len(self.current_episode['user_id']) == self.steps:
            # done = True
@@ -92,8 +93,8 @@ class FakeRecomenderEnv(gym.Env):
         self.relevance_hist = []
         self.total_episodes += 1
         self.episode_num += 1
-        if self.episode_num == len(self.episodes):
-            self.episode_num = 0
+     #   if self.episode_num == len(self.episodes):
+      #      self.episode_num = 0
         self.steps = 0 
         mask = self.log_data['user_id'] == self.episodes[self.episode_num]
         self.current_episode = self.log_data[mask]
