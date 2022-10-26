@@ -176,7 +176,7 @@ class CustomEncoderFactory(d3rlpy.models.encoders.EncoderFactory):
    #     return CustomEncoder(observation_shape, self.feature_size)
 
     def create_with_action(self, observation_shape, action_size):
-        return VectorEncoderWithAction(observation_shape, action_size, self.feature_size)
+        return VectorEncoderWithAction(observation_shape, action_size, [self.feature_size])
 
     def get_params(self, deep=False):
         return {"feature_size": self.feature_size}
