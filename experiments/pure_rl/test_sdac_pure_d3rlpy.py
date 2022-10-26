@@ -110,7 +110,7 @@ if __name__ == "__main__":
 	ds = MovieLens(version="1m")
 	train_dataset,user_logs_train = _prepare_data(ds.ratings)
 	
-	sdac = SDAC(use_gpu=True)
+	sdac = SDAC(use_gpu=False)
 	env = FakeRecomenderEnv(user_logs_train[:1000], 10)
 	evaluate_scorer = evaluate_on_environment(env)
 	sdac.fit(train_dataset,
