@@ -1,7 +1,8 @@
 import math  
 import gym
+import numpy as np
 from gym.spaces import Discrete, Box, Tuple
-#import wandb
+import wandb
 
 def ndcg(k, pred, ground_truth) -> float:
         pred_len = min(k, len(pred))
@@ -44,7 +45,7 @@ class FakeRecomenderEnv(gym.Env):
         self.total_episodes = 0
         #mask = self.log_data['user_id'] == episodes[episode_num]
         self.current_episode = None
-       # wandb.init(project="RecommendationsSDAC", group = "MovieLens_SDAC")
+        wandb.init(project="RecommendationsSDAC", group = "MovieLens_SDAC")
 
     def step(self, action): 
         #print(action)
