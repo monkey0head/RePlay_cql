@@ -58,13 +58,7 @@ class FakeRecomenderEnv(gym.Env):
         ob = (self.current_episode['user_id'].values[self.steps], 
                 self.current_episode['item_id'].values[self.steps])
         self.steps += 1
-        if self.episode_num >= len(self.episodes):
-        	done = True
-        	wandb.log({"episode": self.run, "NDCG": np.mean(self.total_ndsg), "MAP": np.mean(self.total_mape)})
-        	self.total_ndsg = []
-        	self.total_mape = []
-        	self.run += 1
-        	self.episode_num = 0
+       
         	
         if len(self.current_episode['user_id']) == self.steps:
            # done = True
@@ -79,9 +73,17 @@ class FakeRecomenderEnv(gym.Env):
             self.total_mape.append(mape_)
             ob = []            
             ob = self.reset()
+            if self.episode_num >= len(self.episodes):
+        	done = True
+        	wandb.log({"episode": self.run, "NDCG": np.mean(self.total_ndsg), "MAP": np.mean(self.total_mape)})
+        	self.total_ndsg = []
+        	self.total_mape = []
+        	self.run += 1
+        	self.episode_num = 0
         else:
             self.user_hist.append(self.current_episode['user_id'].values[self.steps])
-            self.item_hist.append(self.current_episode['item_id'].values[self.steps])     
+            self.item_hist.append(self.current_episode['item_id'].values[self.steps])    
+         
         return np.asarray(ob), reward, done, {}
         
   #  def fake_reset():
