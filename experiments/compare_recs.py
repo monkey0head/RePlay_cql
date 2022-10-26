@@ -349,11 +349,9 @@ class BareRatingsRunner:
                     RandomRec(seed=self.seed, add_cold=False), self.dataset.pos_binary_train
                 )
             elif alg == 'popular':
-                from replay.models import RandomRec
+                from replay.models.most_popular import MostPopularRec
                 models['Popular'] = (
-                    RandomRec(
-                        distribution='popular_based', alpha=1e5, seed=self.seed, add_cold=False
-                    ),
+                    MostPopularRec(add_cold=False),
                     self.dataset.pos_binary_train
                 )
 
