@@ -58,7 +58,7 @@ class FakeRecomenderEnv(gym.Env):
         ob = (self.current_episode['user_id'].values[self.steps], 
                 self.current_episode['item_id'].values[self.steps])
         self.steps += 1
-        if self.episode_num == len(self.episodes):
+        if self.episode_num >= len(self.episodes):
         	done = True
         	wandb.log({"episode": self.run, "NDCG": np.mean(self.total_ndsg), "MAP": np.mean(self.total_mape)})
         	self.total_ndsg = []
