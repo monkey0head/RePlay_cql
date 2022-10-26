@@ -148,8 +148,6 @@ class RLRecommender(Recommender):
             rewards[rewards > 0] /= 2
             rewards[user_top_k_idxs] += 0.5
 
-        user_logs['rewards'] = rewards
-
         # every user has his own episode (the latest item is defined as terminal)
         user_terminal_idxs = (
             user_logs[::-1]
@@ -159,21 +157,22 @@ class RLRecommender(Recommender):
         )
         terminals = np.zeros(len(user_logs))
         terminals[user_terminal_idxs] = 1
-        user_logs['terminals'] = terminals
 
         actions = user_logs['relevance'].to_numpy()
         if not self.rating_actions:
             actions = (actions >= 3).astype(int)
 
-        # cannot set zero scale as d3rlpy will treat transitions as discrete :/
-        action_randomization_scale = self.action_randomization_scale + 1e-4
-        action_randomization = np.random.randn(len(user_logs)) * action_randomization_scale
+        if self.action_randomization_scale > 0:
+            # cannot set zero scale as d3rlpy will treat transitions as discrete :/
+            action_randomization_scale = self.action_randomization_scale
+            action_randomization = np.random.randn(len(user_logs)) * action_randomization_scale
+            actions += action_randomization
 
         train_dataset = MDPDataset(
             observations=np.array(user_logs[['user_idx', 'item_idx']]),
-            actions=(actions + action_randomization)[:, None],
-            rewards=user_logs['rewards'],
-            terminals=user_logs['terminals']
+            actions=actions[:, None],
+            rewards=rewards,
+            terminals=terminals
         )
         return train_dataset
 

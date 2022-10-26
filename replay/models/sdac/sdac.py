@@ -84,7 +84,7 @@ class SDAC(RLRecommender):
         super(SDAC, self).__init__(
             model=model,
             top_k=top_k, n_epochs=n_epochs,
-            action_randomization_scale=action_randomization_scale,
+            action_randomization_scale=0,
             use_negative_events=use_negative_events,
             rating_based_reward=rating_based_reward,
             rating_actions=rating_actions,
