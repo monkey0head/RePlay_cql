@@ -1,7 +1,7 @@
 import math  
 import gym
 from gym.spaces import Discrete, Box, Tuple
-import wandb
+#import wandb
 
 def ndcg(k, pred, ground_truth) -> float:
         pred_len = min(k, len(pred))
@@ -44,7 +44,7 @@ class FakeRecomenderEnv(gym.Env):
         self.total_episodes = 0
         #mask = self.log_data['user_id'] == episodes[episode_num]
         self.current_episode = None
-        wandb.init(project="RecommendationsSDAC", group = "MovieLens_SDAC")
+       # wandb.init(project="RecommendationsSDAC", group = "MovieLens_SDAC")
 
     def step(self, action): 
         #print(action)
@@ -62,7 +62,7 @@ class FakeRecomenderEnv(gym.Env):
             pred_top_k = pred_df.sort_values(['relevance'])[::-1][:self.top_k]
             reward = ndcg( self.top_k, pred_top_k['relevance'].values, self.original['rating'].values)
             mape_ = mape( self.top_k, pred_top_k['relevance'].values, self.original['rating'].values)
-            wandb.log({"episode": self.total_episodes, "NDCG": reward, "MAP": mape_})
+          #  wandb.log({"episode": self.total_episodes, "NDCG": reward, "MAP": mape_})
             ob = []
         else:
             self.user_hist.append(self.current_episode['user_id'].values[self.steps])
