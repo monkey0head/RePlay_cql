@@ -75,7 +75,7 @@ class FakeRecomenderEnv(gym.Env):
             
             if self.episode_num >= len(self.episodes)-1:
               done = True
-              wandb.log({"episode": self.run, "NDCG": np.mean(self.total_ndsg), "MAP": np.mean(self.total_mape)})
+              wandb.log({"episode": self.run, "NDCG": np.mean(np.asarray(self.total_ndsg)), "MAP": np.mean(np.asarray(self.total_mape))})
               self.total_ndsg = []
               self.total_mape = []
               self.run += 1
