@@ -87,12 +87,12 @@ def _prepare_data(log: DataFrame) -> MDPDataset:
         
         
         #разбиение на трейн тест
-        user_id_list = list(set(user_logs['user_id']))
+        user_id_list = list(set(user_logs['timestamp']))
         count_of_test = int(test_size*len(user_id_list))
         test_idx = int(user_id_list[-count_of_test])
         
-        user_logs_train = user_logs[user_logs['user_id'].astype(int) < test_idx]
-        user_logs_test = user_logs[user_logs['user_id'].astype(int) >= test_idx]
+        user_logs_train = user_logs[user_logs['timestamp'].astype(int) < test_idx]
+        user_logs_test = user_logs[user_logs['timestamp'].astype(int) >= test_idx]
         
         action_randomization_scale = action_randomization_scale + 1e-4
         action_randomization = np.random.randn(len(user_logs_train)) * action_randomization_scale
@@ -114,7 +114,7 @@ def _prepare_data(log: DataFrame) -> MDPDataset:
             rewards=user_logs_test['rewards'],
             terminals=user_logs_test['terminals']
         )
-        return train_dataset, user_logs_train
+        return train_dataset, user_logs_train,test_dataset, user_logs_test
         
 
 class VectorEncoderWithAction(_VectorEncoder, EncoderWithAction):
@@ -187,10 +187,10 @@ class CustomEncoderFactory(d3rlpy.models.encoders.EncoderFactory):
 if __name__ == "__main__":
 	#wandb.init(project="RecommendationsSDAC", group = "MovieLens_SDAC")
 	ds = MovieLens(version="1m")
-	train_dataset,user_logs_train = _prepare_data(ds.ratings)
+	train_dataset,user_logs_train, test_dataset, users_logs_test = _prepare_data(ds.ratings)
 	#encoder_factory=CustomEncoderFactory(64)
 	sdac = SDAC(use_gpu=False, actor_encoder_factory=CustomEncoderFactory(64), critic_encoder_factory=CustomEncoderFactory(64),encoder_factory=CustomEncoderFactory(64))
-	env = FakeRecomenderEnv(user_logs_train[:1000], 10)
+	env = FakeRecomenderEnv(users_logs_test[:1000], 10)
 	evaluate_scorer = evaluate_on_environment(env)
 	sdac.fit(train_dataset,
         eval_episodes=train_dataset,
