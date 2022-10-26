@@ -183,7 +183,7 @@ class CustomEncoderFactory(d3rlpy.models.encoders.EncoderFactory):
         return {"feature_size": self.feature_size}
         
 if __name__ == "__main__":
-	wandb.init(project="RecommendationsSDAC", group = "MovieLens_SDAC")
+	#wandb.init(project="RecommendationsSDAC", group = "MovieLens_SDAC")
 	ds = MovieLens(version="1m")
 	train_dataset,user_logs_train = _prepare_data(ds.ratings)
 	#encoder_factory=CustomEncoderFactory(64)
