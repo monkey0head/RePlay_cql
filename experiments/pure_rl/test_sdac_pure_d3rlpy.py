@@ -11,6 +11,11 @@ from replay.models.sdac.sdac_impl import SDAC
 from replay.models.cql import CQL
 from fake_recommender_env import FakeRecomenderEnv
 from d3rlpy.models.torch.encoders import _VectorEncoder, EncoderWithAction
+from abc import ABCMeta, abstractmethod
+from typing import List, Optional, Sequence
+
+import torch
+import torch.nn.functional as F
 from torch import nn
 
 def _prepare_data(log: DataFrame) -> MDPDataset:
