@@ -10,7 +10,7 @@ from d3rlpy.metrics.scorer import evaluate_on_environment
 from replay.models.sdac.sdac_impl import SDAC
 from replay.models.cql import CQL
 from fake_recommender_env import FakeRecomenderEnv
-from d3rlpy.models.torch.encoders import _VectorEncoder, EncoderWithAction
+from d3rlpy.models.torch.encoders import _VectorEncoder, EncoderWithAction, VectorEncoder
 from abc import ABCMeta, abstractmethod
 from typing import List, Optional, Sequence
 import d3rlpy
@@ -173,7 +173,7 @@ class CustomEncoderFactory(d3rlpy.models.encoders.EncoderFactory):
         self.feature_size = feature_size
 
     def create(self, observation_shape):
-        return _VectorEncoder(observation_shape, [self.feature_size])
+        return VectorEncoder(observation_shape, [self.feature_size])
 
     def create_with_action(self, observation_shape, action_size):
         return VectorEncoderWithAction(observation_shape, action_size, [self.feature_size])
