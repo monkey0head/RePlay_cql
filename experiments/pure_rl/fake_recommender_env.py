@@ -71,9 +71,9 @@ class FakeRecomenderEnv(gym.Env):
             pred_df = pd.DataFrame({'user_id': self.user_hist, 'item_hist': self.item_hist,
                                     'relevance': self.relevance_hist})
             pred_top_k = pred_df.sort_values(['relevance'])[::-1][:self.top_k]
-            ndcg = ndcg( self.top_k, pred_top_k['relevance'].values, self.original['rating'].values)
+            ndcg_ = ndcg( self.top_k, pred_top_k['relevance'].values, self.original['rating'].values)
             mape_ = mape( self.top_k, pred_top_k['relevance'].values, self.original['rating'].values)
-            wandb.log({"episode": self.total_episodes, "NDCG": ndcg, "MAP": mape_})
+            wandb.log({"episode": self.total_episodes, "NDCG": ndcg_, "MAP": mape_})
             self.total_ndsg.append(ndcg)
             self.total_mape.append(mape_)
             ob = []            
