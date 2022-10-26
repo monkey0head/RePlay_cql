@@ -41,10 +41,13 @@ class FakeRecomenderEnv(gym.Env):
         self.top_k = top_k
         self.steps = 0
         self.episode_num = 0
+        self.total_ndsg = []
+        self.total_mape = []
         self.episodes = list(set(self.log_data['user_id']))
         self.total_episodes = 0
         #mask = self.log_data['user_id'] == episodes[episode_num]
         self.current_episode = None
+        self.run = 0
        
 
     def step(self, action): 
@@ -57,15 +60,22 @@ class FakeRecomenderEnv(gym.Env):
         self.steps += 1
         if self.episode_num == len(self.episodes):
         	done = True
+        	wandb.log({"episode": self.run, "NDCG": np.mean(self.total_ndsg), "MAP": np.mean(self.total_mape)})
+        	self.total_ndsg = []
+        	self.total_mape = []
+        	self.run += 1
+        	
         if len(self.current_episode['user_id']) == self.steps:
            # done = True
           #  print(len(self.user_hist), len(self.item_hist), len(self.relevance_hist))
             pred_df = pd.DataFrame({'user_id': self.user_hist, 'item_hist': self.item_hist,
                                     'relevance': self.relevance_hist})
             pred_top_k = pred_df.sort_values(['relevance'])[::-1][:self.top_k]
-            reward = ndcg( self.top_k, pred_top_k['relevance'].values, self.original['rating'].values)
+            ndcg = ndcg( self.top_k, pred_top_k['relevance'].values, self.original['rating'].values)
             mape_ = mape( self.top_k, pred_top_k['relevance'].values, self.original['rating'].values)
-            wandb.log({"episode": self.total_episodes, "NDCG": reward, "MAP": mape_})
+            wandb.log({"episode": self.total_episodes, "NDCG": ndcg, "MAP": mape_})
+            self.total_ndsg.append(ndcg)
+            self.total_mape.append(mape_)
             ob = []            
             ob = self.reset()
         else:

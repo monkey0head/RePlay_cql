@@ -190,7 +190,7 @@ if __name__ == "__main__":
 	train_dataset,user_logs_train, test_dataset, users_logs_test = _prepare_data(ds.ratings)
 	#encoder_factory=CustomEncoderFactory(64)
 	sdac = SDAC(use_gpu=False, actor_encoder_factory=CustomEncoderFactory(64), critic_encoder_factory=CustomEncoderFactory(64),encoder_factory=CustomEncoderFactory(64))
-	env = FakeRecomenderEnv(users_logs_test, 10)
+	env = FakeRecomenderEnv(users_logs_test[:1000], 10)
 	evaluate_scorer = evaluate_on_environment(env)
 	sdac.fit(train_dataset,
         eval_episodes=train_dataset,
