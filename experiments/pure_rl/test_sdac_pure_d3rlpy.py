@@ -7,7 +7,7 @@ import numpy as np
 from typing import Optional, Callable
 import pandas as pd
 from d3rlpy.metrics.scorer import evaluate_on_environment
-from replay.models.sdac.sdac import SDAC
+from replay.models.sdac.sdac_impl import SDAC
 from replay.models.cql import CQL
 from fake_recommender_env import FakeRecomenderEnv
     
