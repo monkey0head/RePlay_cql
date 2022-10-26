@@ -10,7 +10,8 @@ from d3rlpy.metrics.scorer import evaluate_on_environment
 from replay.models.sdac.sdac_impl import SDAC
 from replay.models.cql import CQL
 from fake_recommender_env import FakeRecomenderEnv
-from d3rlpy.models.torch import _VectorEncoder, EncoderWithAction
+from d3rlpy.models.torch.encoders import _VectorEncoder, EncoderWithAction
+
 def _prepare_data(log: DataFrame) -> MDPDataset:
         use_negative_events = True #False
         rating_based_reward = False #False
