@@ -13,7 +13,7 @@ from fake_recommender_env import FakeRecomenderEnv
 from d3rlpy.models.torch.encoders import _VectorEncoder, EncoderWithAction
 from abc import ABCMeta, abstractmethod
 from typing import List, Optional, Sequence
-
+import d3rlpy
 import torch
 import torch.nn.functional as F
 from torch import nn
