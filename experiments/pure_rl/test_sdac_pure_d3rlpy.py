@@ -194,7 +194,7 @@ if __name__ == "__main__":
 	evaluate_scorer = evaluate_on_environment(env)
 	sdac.fit(train_dataset,
         eval_episodes=train_dataset,
-        n_epochs=10,
+        n_epochs=100,
         scorers={'environment': evaluate_scorer})
         
  
