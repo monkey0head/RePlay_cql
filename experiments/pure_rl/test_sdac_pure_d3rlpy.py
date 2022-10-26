@@ -166,7 +166,7 @@ class VectorEncoderWithAction(_VectorEncoder, EncoderWithAction):
     def action_size(self) -> int:
         return self._action_size
 
-class CustomEncoderFactory(EncoderFactory):
+class CustomEncoderFactory(d3rlpy.models.encoders.EncoderFactory):
     TYPE = "custom"
 
     def __init__(self, feature_size):
