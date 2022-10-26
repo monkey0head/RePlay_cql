@@ -185,7 +185,7 @@ if __name__ == "__main__":
 	ds = MovieLens(version="1m")
 	train_dataset,user_logs_train = _prepare_data(ds.ratings)
 	#encoder_factory=CustomEncoderFactory(64)
-	sdac = SDAC(use_gpu=False, actor_encoder_factory=CustomEncoderFactory(64), critic_encoder_factory=CustomEncoderFactory(64))
+	sdac = SDAC(use_gpu=False, actor_encoder_factory=CustomEncoderFactory(64), critic_encoder_factory=CustomEncoderFactory(64),encoder_factory=CustomEncoderFactory(64))
 	env = FakeRecomenderEnv(user_logs_train[:1000], 10)
 	evaluate_scorer = evaluate_on_environment(env)
 	sdac.fit(train_dataset,
