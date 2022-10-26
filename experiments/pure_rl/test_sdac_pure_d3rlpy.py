@@ -107,6 +107,7 @@ def _prepare_data(log: DataFrame) -> MDPDataset:
         return train_dataset, user_logs_train
         
 if __name__ == "__main__":
+	ds = MovieLens(version="1m")
 	train_dataset,user_logs_train = _prepare_data(ds.ratings)
 	
 	sdac = SDAC(use_gpu=True)
