@@ -11,6 +11,7 @@ from replay.models.sdac.sdac_impl import SDAC
 from replay.models.cql import CQL
 from fake_recommender_env import FakeRecomenderEnv
 from d3rlpy.models.torch.encoders import _VectorEncoder, EncoderWithAction
+from torch import nn
 
 def _prepare_data(log: DataFrame) -> MDPDataset:
         use_negative_events = True #False
@@ -160,11 +161,26 @@ class VectorEncoderWithAction(_VectorEncoder, EncoderWithAction):
     def action_size(self) -> int:
         return self._action_size
 
+class CustomEncoderFactory(EncoderFactory):
+    TYPE = "custom"
+
+    def __init__(self, feature_size):
+        self.feature_size = feature_size
+
+  #  def create(self, observation_shape):
+   #     return CustomEncoder(observation_shape, self.feature_size)
+
+    def create_with_action(self, observation_shape, action_size, discrete_action):
+        return VectorEncoderWithAction(observation_shape, action_size, self.feature_size)
+
+    def get_params(self, deep=False):
+        return {"feature_size": self.feature_size}
+        
 if __name__ == "__main__":
 	ds = MovieLens(version="1m")
 	train_dataset,user_logs_train = _prepare_data(ds.ratings)
 	#encoder_factory=CustomEncoderFactory(64)
-	sdac = SDAC(use_gpu=False, encoder_factory=VectorEncoderWithAction(64))
+	sdac = SDAC(use_gpu=False, encoder_factory=CustomEncoderFactory(64))
 	env = FakeRecomenderEnv(user_logs_train[:1000], 10)
 	evaluate_scorer = evaluate_on_environment(env)
 	sdac.fit(train_dataset,
