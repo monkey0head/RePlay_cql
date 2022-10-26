@@ -303,7 +303,6 @@ class CQL(RLRecommender):
             rating_based_reward: bool = False,
             rating_actions: bool = False,
             reward_top_k: bool = False,
-            epoch_callback: Optional[Callable[[int, RLRecommender], None]] = None,
 
             # CQL inner params
             actor_learning_rate: float = 1e-4,
@@ -374,5 +373,4 @@ class CQL(RLRecommender):
             rating_based_reward=rating_based_reward,
             rating_actions=rating_actions,
             reward_top_k=reward_top_k,
-            epoch_callback=epoch_callback
         )

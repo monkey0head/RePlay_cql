@@ -133,7 +133,6 @@ class CRR(RLRecommender):
             use_negative_events: bool = False,
             rating_based_reward: bool = False,
             reward_top_k: bool = False,
-            epoch_callback: Optional[Callable[[int, RLRecommender], None]] = None,
 
             # CQL inner params
             actor_learning_rate: float = 3e-4,
@@ -199,5 +198,4 @@ class CRR(RLRecommender):
             use_negative_events=use_negative_events,
             rating_based_reward=rating_based_reward,
             reward_top_k=reward_top_k,
-            epoch_callback=epoch_callback
         )
