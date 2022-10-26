@@ -69,7 +69,7 @@ class FakeRecomenderEnv(gym.Env):
             ndcg_ = ndcg( self.top_k, pred_top_k['relevance'].values, self.original['rating'].values)
             mape_ = mape( self.top_k, pred_top_k['relevance'].values, self.original['rating'].values)
             wandb.log({"episode": self.total_episodes, "NDCG": ndcg_, "MAP": mape_})
-            self.total_ndsg.append(ndcg)
+            self.total_ndsg.append(ndcg_)
             self.total_mape.append(mape_)
             ob = []            
             
