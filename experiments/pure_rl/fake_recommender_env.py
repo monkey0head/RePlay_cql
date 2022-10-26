@@ -45,7 +45,7 @@ class FakeRecomenderEnv(gym.Env):
         self.total_episodes = 0
         #mask = self.log_data['user_id'] == episodes[episode_num]
         self.current_episode = None
-        wandb.init(project="RecommendationsSDAC", group = "MovieLens_SDAC")
+       
 
     def step(self, action): 
         #print(action)
