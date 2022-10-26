@@ -98,8 +98,11 @@ class FakeRecomenderEnv(gym.Env):
         self.episode_num += 1
      #   if self.episode_num == len(self.episodes):
       #      self.episode_num = 0
+        
         self.steps = 0 
-        mask = self.log_data['user_id'] == self.episodes[self.episode_num]
+        try:
+        	mask = self.log_data['user_id'] == self.episodes[self.episode_num]
+        print(self.episode_num)
         self.current_episode = self.log_data[mask]
        # print(self.current_episode['user_id'])
         self.user_hist.append(self.current_episode['user_id'].values[0])
