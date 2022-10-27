@@ -113,8 +113,6 @@ class SDAC(RLRecommender):
             actor_optim_factory: OptimizerFactory = AdamFactory(),
             critic_optim_factory: OptimizerFactory = AdamFactory(),
             temp_optim_factory: OptimizerFactory = AdamFactory(),
-            actor_encoder_factory: EncoderArg = "default",
-            critic_encoder_factory: EncoderArg = "default",
             q_func_factory: QFuncArg = "mean",
             batch_size: int = 256,
             n_frames: int = 1,
@@ -127,6 +125,8 @@ class SDAC(RLRecommender):
             scaler: ScalerArg = None,
             action_scaler: ActionScalerArg = None,
             reward_scaler: RewardScalerArg = None,
+            actor_encoder_factory: EncoderArg = "default",
+            critic_encoder_factory: EncoderArg = "default",
             **params: Any
     ):
         model = sdac_impl.SDAC(
@@ -136,9 +136,9 @@ class SDAC(RLRecommender):
             actor_optim_factory=actor_optim_factory,
             critic_optim_factory=critic_optim_factory,
             temp_optim_factory=temp_optim_factory,
-            actor_encoder_factory=CustomEncoderFactory(64), 
-            critic_encoder_factory=CustomEncoderFactory(64),
-            encoder_factory=CustomEncoderFactory(64),
+            actor_encoder_factory=CustomEncoderFactory(128), 
+            critic_encoder_factory=CustomEncoderFactory(128),
+            encoder_factory=CustomEncoderFactory(128),
             q_func_factory=q_func_factory,
             batch_size=batch_size,
             n_frames=n_frames,
