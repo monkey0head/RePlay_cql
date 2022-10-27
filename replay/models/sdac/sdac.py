@@ -75,10 +75,10 @@ class CustomEncoderFactory(d3rlpy.models.encoders.EncoderFactory):
         self.feature_size = feature_size
 
     def create(self, observation_shape):
-        return VectorEncoder(observation_shape, [self.feature_size])
+        return VectorEncoder(observation_shape, [self.feature_size, self.feature_size])
 
     def create_with_action(self, observation_shape, action_size):
-        return VectorEncoderWithAction(observation_shape, action_size, [self.feature_size])
+        return VectorEncoderWithAction(observation_shape, action_size, [self.feature_size, self.feature_size])
 
     def get_params(self, deep=False):
         return {"feature_size": self.feature_size}
@@ -136,9 +136,9 @@ class SDAC(RLRecommender):
             actor_optim_factory=actor_optim_factory,
             critic_optim_factory=critic_optim_factory,
             temp_optim_factory=temp_optim_factory,
-            actor_encoder_factory=CustomEncoderFactory(128), 
-            critic_encoder_factory=CustomEncoderFactory(128),
-            encoder_factory=CustomEncoderFactory(128),
+            actor_encoder_factory=CustomEncoderFactory(256), 
+            critic_encoder_factory=CustomEncoderFactory(256),
+            encoder_factory=CustomEncoderFactory(256),
             q_func_factory=q_func_factory,
             batch_size=batch_size,
             n_frames=n_frames,
