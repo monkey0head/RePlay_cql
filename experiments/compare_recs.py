@@ -302,6 +302,7 @@ class BareRatingsRunner:
                 rating_based_reward=self.rating_based_reward,
                 rating_actions=self.rating_actions,
                 reward_top_k=self.reward_top_k,
+                batch_size=1024
             )
 
         algorithms = list(map(str.lower, algorithms))
