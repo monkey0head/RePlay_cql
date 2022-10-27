@@ -50,7 +50,7 @@ class GumbelDistribution(Distribution):
 
     def sample_gumbel(self):
         U = torch.zeros_like(self.logits)
-        U.uniform_(0, 0.5)
+        U.uniform_(0, 1)
         to_gumbel = -torch.log(-torch.log(U + self.eps) + self.eps)
         return to_gumbel
 
