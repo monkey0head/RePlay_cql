@@ -4,7 +4,7 @@ For 'alpha' version PySpark DataFrame are converted to Pandas
 """
 
 from typing import Optional, Callable
-
+from d3rlpy.metrics.scorer import evaluate_on_environment
 import d3rlpy.algos.cql as CQL_d3rlpy
 import numpy as np
 import pandas as pd
