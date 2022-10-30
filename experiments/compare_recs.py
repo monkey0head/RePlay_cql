@@ -294,7 +294,7 @@ class BareRatingsRunner:
         })
 
     def build_models(self, algorithms: list[str], test_log: DataFrame = None) -> dict[str, tuple[Recommender, DataFrame]]:
-        def build_rl_recommender(ctor):
+        def build_rl_recommender(ctor, test_log = None):
             n_epochs = self.epochs[-1] if self.epochs else 0
             return ctor(
                 top_k=self.k, use_gpu=self.gpu, n_epochs=n_epochs,
