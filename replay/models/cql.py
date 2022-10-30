@@ -19,7 +19,7 @@ from pyspark.sql import functions as sf, DataFrame
 
 from replay.data_preparator import DataPreparator
 from replay.models import Recommender
-
+from replay.fake_recommender_env import FakeRecomenderEnv
 
 class RLRecommender(Recommender):
     top_k: int
@@ -94,12 +94,18 @@ class RLRecommender(Recommender):
         log: DataFrame,
         user_features: Optional[DataFrame] = None,
         item_features: Optional[DataFrame] = None,
+        val_log: DataFrame = None
     ) -> None:
         if self.train is None:
             self.train: MDPDataset = self._prepare_data(log)
-
+        if val_data:
+        	_, val_df = self._prepare_data(log)
+            
+	env = FakeRecomenderEnv(val_df[:10000], 10)
+	evaluate_scorer = evaluate_on_environment(env)
+	
         if self.fitter is None:
-            self.fitter = self.model.fitter(self.train, n_epochs=self.n_epochs)
+            self.fitter = self.model.fitter(self.train, n_epochs=self.n_epochs, scorers={'environment': evaluate_scorer})
 
         try:
             next(self.fitter)
@@ -121,7 +127,7 @@ class RLRecommender(Recommender):
         5.0: 1.0,
     }
 
-    def _prepare_data(self, log: DataFrame) -> MDPDataset:
+    def _prepare_data(self, log: DataFrame, return_pd_df = False) -> MDPDataset:
         if not self.use_negative_events:
             # remove negative events
             log = log.filter(sf.col('relevance') >= sf.lit(3.0))
@@ -147,7 +153,8 @@ class RLRecommender(Recommender):
             # rescale positives and additionally reward top-K watched movies
             rewards[rewards > 0] /= 2
             rewards[user_top_k_idxs] += 0.5
-
+        
+        
         # every user has his own episode (the latest item is defined as terminal)
         user_terminal_idxs = (
             user_logs[::-1]
@@ -174,6 +181,11 @@ class RLRecommender(Recommender):
             rewards=rewards,
             terminals=terminals
         )
+        if return_pd_df:
+                user_logs['rating'] = actions
+                user_logs['rewards'] = rewards
+                user_logs['terminals'] = terminals
+        	return train_dataset, user_logs
         return train_dataset
 
     @property

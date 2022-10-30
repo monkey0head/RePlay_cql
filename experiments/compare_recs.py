@@ -244,7 +244,10 @@ class BareRatingsRunner:
                 epoch += 1
 
                 start_time = time.time()
-                model.fit(log=train)
+                if model_name in ['CQL', 'SDAC', 'DDPG']:
+                	model.fit(log=train, val_log = self.dataset.test)
+                else:
+                	model.fit(log=train)
                 fit_time += time.time() - start_time
 
                 if epoch not in schedule:
