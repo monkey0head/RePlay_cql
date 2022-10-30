@@ -19,7 +19,7 @@ from pyspark.sql import functions as sf, DataFrame
 
 from replay.data_preparator import DataPreparator
 from replay.models import Recommender
-from replay.fake_recommender_env import FakeRecomenderEnv
+from replay.models.fake_recommender_env import FakeRecomenderEnv
 
 class RLRecommender(Recommender):
     top_k: int
