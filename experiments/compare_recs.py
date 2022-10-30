@@ -22,7 +22,8 @@ from replay.models import Recommender
 from replay.session_handler import State, get_spark_session
 from replay.splitters import DateSplitter
 from replay.utils import get_log_info
-
+import wandb
+wandb.init(project="ReplayRecommendations", group = "MovieLens_SDAC")
 
 class RatingsDataset:
     name: str
