@@ -316,7 +316,7 @@ class CQL(RLRecommender):
             rating_based_reward: bool = False,
             rating_actions: bool = False,
             reward_top_k: bool = False,
-
+	    test_log: DataFrame = None, 
             # CQL inner params
             actor_learning_rate: float = 1e-4,
             critic_learning_rate: float = 3e-4,
@@ -380,6 +380,7 @@ class CQL(RLRecommender):
 
         super(CQL, self).__init__(
             model=model,
+            test_log = test_log,
             top_k=top_k, n_epochs=n_epochs,
             action_randomization_scale=action_randomization_scale,
             use_negative_events=use_negative_events,
