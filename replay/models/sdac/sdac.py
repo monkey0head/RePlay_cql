@@ -1,5 +1,5 @@
 from typing import Optional, Any, Callable
-
+from pyspark.sql import functions as sf, DataFrame
 from d3rlpy.argument_utility import (
     EncoderArg, QFuncArg, UseGPUArg, ScalerArg, ActionScalerArg,
     RewardScalerArg
