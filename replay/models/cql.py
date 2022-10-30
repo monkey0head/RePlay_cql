@@ -99,10 +99,10 @@ class RLRecommender(Recommender):
         if self.train is None:
             self.train: MDPDataset = self._prepare_data(log)
         if val_data:
-        	_, val_df = self._prepare_data(log)
+            _, val_df = self._prepare_data(log)
             
-	env = FakeRecomenderEnv(val_df[:10000], 10)
-	evaluate_scorer = evaluate_on_environment(env)
+        env = FakeRecomenderEnv(val_df[:10000], 10)
+        evaluate_scorer = evaluate_on_environment(env)
 	
         if self.fitter is None:
             self.fitter = self.model.fitter(self.train, n_epochs=self.n_epochs, scorers={'environment': evaluate_scorer})
