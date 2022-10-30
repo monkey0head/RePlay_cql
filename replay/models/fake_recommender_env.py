@@ -43,7 +43,7 @@ class FakeRecomenderEnv(gym.Env):
         self.episode_num = 0
         self.total_ndsg = []
         self.total_mape = []
-        self.episodes = list(set(self.log_data['user_id']))
+        self.episodes = list(set(self.log_data['user_idx']))
         self.total_episodes = 0
         #mask = self.log_data['user_id'] == episodes[episode_num]
         self.current_episode = None
@@ -55,15 +55,15 @@ class FakeRecomenderEnv(gym.Env):
         self.relevance_hist.append(action)
         done = False
         reward = 0
-        ob = (self.current_episode['user_id'].values[self.steps], 
-                self.current_episode['item_id'].values[self.steps])
+        ob = (self.current_episode['user_idx'].values[self.steps], 
+                self.current_episode['item_idx'].values[self.steps])
         self.steps += 1
        
         	
-        if len(self.current_episode['user_id']) == self.steps:
+        if len(self.current_episode['user_idx']) == self.steps:
            # done = True
           #  print(len(self.user_hist), len(self.item_hist), len(self.relevance_hist))
-            pred_df = pd.DataFrame({'user_id': self.user_hist, 'item_hist': self.item_hist,
+            pred_df = pd.DataFrame({'user_idx': self.user_hist, 'item_hist': self.item_hist,
                                     'relevance': self.relevance_hist})
             pred_top_k = pred_df.sort_values(['relevance'])[::-1][:self.top_k]
             ndcg_ = ndcg( self.top_k, pred_top_k['relevance'].values, self.original['rating'].values)
@@ -82,8 +82,8 @@ class FakeRecomenderEnv(gym.Env):
               self.episode_num = 0
             ob = self.reset()
         else:
-            self.user_hist.append(self.current_episode['user_id'].values[self.steps])
-            self.item_hist.append(self.current_episode['item_id'].values[self.steps])    
+            self.user_hist.append(self.current_episode['user_idx'].values[self.steps])
+            self.item_hist.append(self.current_episode['item_idx'].values[self.steps])    
          
         return np.asarray(ob), reward, done, {}
         
@@ -101,16 +101,16 @@ class FakeRecomenderEnv(gym.Env):
         
         self.steps = 0 
         try:
-        	mask = self.log_data['user_id'] == self.episodes[self.episode_num]
+        	mask = self.log_data['user_idx'] == self.episodes[self.episode_num]
         except:
         	print(self.episode_num, self.episodes)
         self.current_episode = self.log_data[mask]
        # print(self.current_episode['user_id'])
-        self.user_hist.append(self.current_episode['user_id'].values[0])
-        self.item_hist.append( self.current_episode['item_id'].values[0])
-        self.original = original_for_user(self.log_data, self.current_episode['user_id'].values[0], k = self.top_k)
-        obs = self.current_episode['user_id'].values[0], \
-                       self.current_episode['item_id'].values[0]
+        self.user_hist.append(self.current_episode['user_idx'].values[0])
+        self.item_hist.append( self.current_episode['item_idx'].values[0])
+        self.original = original_for_user(self.log_data, self.current_episode['user_idx'].values[0], k = self.top_k)
+        obs = self.current_episode['user_idx'].values[0], \
+                       self.current_episode['item_idx'].values[0]
       #  print( np.asarray(obs))
         return np.asarray(obs)
 
