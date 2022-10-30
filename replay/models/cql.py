@@ -36,13 +36,14 @@ class RLRecommender(Recommender):
             self, *,
             model: LearnableBase,
             top_k: int,
+            test_log: DataFrame,
             n_epochs: int = 1,
             action_randomization_scale: float = 0.,
             use_negative_events: bool = False,
             rating_based_reward: bool = False,
             rating_actions: bool = False,
             reward_top_k: bool = True,
-            test_log: DataFrame = None
+            
     ):
         super().__init__()
         self.model = model
