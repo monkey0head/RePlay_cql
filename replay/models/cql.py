@@ -41,7 +41,8 @@ class RLRecommender(Recommender):
             use_negative_events: bool = False,
             rating_based_reward: bool = False,
             rating_actions: bool = False,
-            reward_top_k: bool = True
+            reward_top_k: bool = True,
+            test_log: DataFrame = None
     ):
         super().__init__()
         self.model = model
@@ -55,6 +56,7 @@ class RLRecommender(Recommender):
 
         self.train = None
         self.fitter = None
+        self.test_log = test_log
 
     def _predict(
         self,
@@ -94,12 +96,11 @@ class RLRecommender(Recommender):
         log: DataFrame,
         user_features: Optional[DataFrame] = None,
         item_features: Optional[DataFrame] = None,
-        val_log: DataFrame = None
     ) -> None:
         if self.train is None:
             self.train: MDPDataset = self._prepare_data(log)
-        if val_data:
-            _, val_df = self._prepare_data(log)
+        if self.test_log:
+            _, val_df = self._prepare_data(self.test_log, True)
             
         env = FakeRecomenderEnv(val_df[:10000], 10)
         evaluate_scorer = evaluate_on_environment(env)

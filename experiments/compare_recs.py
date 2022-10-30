@@ -244,10 +244,8 @@ class BareRatingsRunner:
                 epoch += 1
 
                 start_time = time.time()
-                if model_name in ['CQL', 'SDAC', 'DDPG']:
-                	model.fit(log=train, val_log = self.dataset.test)
-                else:
-                	model.fit(log=train)
+             
+                model.fit(log=train)
                 fit_time += time.time() - start_time
 
                 if epoch not in schedule:
@@ -295,7 +293,7 @@ class BareRatingsRunner:
             MRR(): self.k
         })
 
-    def build_models(self, algorithms: list[str]) -> dict[str, tuple[Recommender, DataFrame]]:
+    def build_models(self, algorithms: list[str], test_log: DataFrame = None) -> dict[str, tuple[Recommender, DataFrame]]:
         def build_rl_recommender(ctor):
             n_epochs = self.epochs[-1] if self.epochs else 0
             return ctor(
@@ -305,7 +303,7 @@ class BareRatingsRunner:
                 rating_based_reward=self.rating_based_reward,
                 rating_actions=self.rating_actions,
                 reward_top_k=self.reward_top_k,
-                batch_size=1024
+                batch_size=1024, test_log = test_log
             )
 
         algorithms = list(map(str.lower, algorithms))
@@ -313,13 +311,13 @@ class BareRatingsRunner:
         for alg in algorithms:
             if alg == 'cql':
                 from replay.models.cql import CQL
-                models['CQL'] = build_rl_recommender(CQL), self.dataset.raw_train
+                models['CQL'] = build_rl_recommender(CQL, self.dataset.test), self.dataset.raw_train
             elif alg == 'sdac':
                 from replay.models.sdac.sdac import SDAC
-                models['SDAC'] = build_rl_recommender(SDAC), self.dataset.raw_train
+                models['SDAC'] = build_rl_recommender(SDAC, self.dataset.test), self.dataset.raw_train
             elif alg == 'crr':
                 from replay.models.crr import CRR
-                models['CRR'] = build_rl_recommender(CRR), self.dataset.raw_train
+                models['CRR'] = build_rl_recommender(CRR, self.dataset.test), self.dataset.raw_train
             elif alg == 'ddpg':
                 from replay.models.ddpg import DDPG
                 # full-log nums => I take an upper-bound
