@@ -28,7 +28,7 @@ def mape(k, pred, ground_truth) -> float:
         
 
 def original_for_user(df, target, k = 10):
-    mask = df['user_id'] == target
+    mask = df['user_idx'] == target
     user_relevance = df[mask]
     return user_relevance.sort_values(['rating'])[::-1][:k]
    
@@ -43,7 +43,10 @@ class FakeRecomenderEnv(gym.Env):
         self.episode_num = 0
         self.total_ndsg = []
         self.total_mape = []
+       
         self.episodes = list(set(self.log_data['user_idx']))
+        if len(self.episodes) == 0:
+            raise Exception (self.log_data.keys())
         self.total_episodes = 0
         #mask = self.log_data['user_id'] == episodes[episode_num]
         self.current_episode = None
@@ -102,8 +105,8 @@ class FakeRecomenderEnv(gym.Env):
         self.steps = 0 
         try:
         	mask = self.log_data['user_idx'] == self.episodes[self.episode_num]
-        except:
-        	raise Exception(self.episode_num, self.episodes)
+        except Exception as e:
+        	raise Exception(e, self.episode_num, self.episodes)
         self.current_episode = self.log_data[mask]
        # print(self.current_episode['user_id'])
         self.user_hist.append(self.current_episode['user_idx'].values[0])
