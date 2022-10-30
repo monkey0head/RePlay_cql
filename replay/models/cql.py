@@ -108,7 +108,7 @@ class RLRecommender(Recommender):
 	
         if self.fitter is None:
             
-            self.fitter = self.model.fitter(self.train, n_epochs=self.n_epochs, scorers={'environment': evaluate_scorer, 'aboba': lambda a: return 8})
+            self.fitter = self.model.fitter(self.train, n_epochs=self.n_epochs, scorers={'environment': evaluate_scorer, 'aboba': lambda a: 8})
 
         try:
             next(self.fitter)
