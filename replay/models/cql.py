@@ -182,10 +182,10 @@ class RLRecommender(Recommender):
             terminals=terminals
         )
         if return_pd_df:
-                user_logs['rating'] = actions
-                user_logs['rewards'] = rewards
-                user_logs['terminals'] = terminals
-        	return train_dataset, user_logs
+            user_logs['rating'] = actions
+            user_logs['rewards'] = rewards
+            user_logs['terminals'] = terminals
+            return train_dataset, user_logs
         return train_dataset
 
     @property
