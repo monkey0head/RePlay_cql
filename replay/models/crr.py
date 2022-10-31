@@ -133,6 +133,7 @@ class CRR(RLRecommender):
             use_negative_events: bool = False,
             rating_based_reward: bool = False,
             reward_top_k: bool = False,
+            test_log: DataFrame = None, 
 
             # CQL inner params
             actor_learning_rate: float = 3e-4,
