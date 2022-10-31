@@ -39,7 +39,7 @@ class FakeRecomenderEnv(gym.Env):
         self.action_space = gym.spaces.Discrete(5)
         self.observation_space = Box(0,100000, (2,))
         self.log_data = test_data
-        self.top_k = 20
+        self.top_k = 200
         self.steps = 0
         self.episode_num = 0
         self.total_ndsg = []
