@@ -116,6 +116,7 @@ class RatingsDataset:
 
         test_start = test.agg(sf.min('timestamp')).collect()[0][0]
         raw_train = log.filter(sf.col('timestamp') < test_start).cache()
+        raw_test = log.filter(sf.col('timestamp') >= test_start).cache()
         test_users = test.select('user_idx').distinct().cache()
 
         self.binary_train = binary_train
@@ -312,13 +313,13 @@ class BareRatingsRunner:
         for alg in algorithms:
             if alg == 'cql':
                 from replay.models.cql import CQL
-                models['CQL'] = build_rl_recommender(CQL, self.dataset.raw_train), self.dataset.raw_train
+                models['CQL'] = build_rl_recommender(CQL, self.dataset.raw_test), self.dataset.raw_test
             elif alg == 'sdac':
                 from replay.models.sdac.sdac import SDAC
-                models['SDAC'] = build_rl_recommender(SDAC, self.dataset.raw_train), self.dataset.raw_train
+                models['SDAC'] = build_rl_recommender(SDAC, self.dataset.raw_test), self.dataset.raw_test
             elif alg == 'crr':
                 from replay.models.crr import CRR
-                models['CRR'] = build_rl_recommender(CRR, self.dataset.raw_train), self.dataset.raw_train
+                models['CRR'] = build_rl_recommender(CRR, self.dataset.raw_test), self.dataset.raw_test
             elif alg == 'ddpg':
                 from replay.models.ddpg import DDPG
                 # full-log nums => I take an upper-bound
