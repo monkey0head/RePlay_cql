@@ -122,6 +122,7 @@ class RatingsDataset:
         self.binary_train = binary_train
         self.pos_binary_train = pos_binary_train
         self.raw_train = raw_train
+        self.raw_test = raw_test
         self.test = test
         self.test_users = test_users
 
