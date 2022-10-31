@@ -4,6 +4,7 @@ import numpy as np
 from gym.spaces import Discrete, Box, Tuple
 import wandb
 import pandas as pd
+
 def ndcg(k, pred, ground_truth) -> float:
         pred_len = min(k, len(pred))
         ground_truth_len = min(k, len(ground_truth))
@@ -71,6 +72,8 @@ class FakeRecomenderEnv(gym.Env):
             pred_top_k = pred_df.sort_values(['relevance'])[::-1][:self.top_k]
             ndcg_ = ndcg( self.top_k, pred_top_k['relevance'].values, self.original['rating'].values)
             mape_ = mape( self.top_k, pred_top_k['relevance'].values, self.original['rating'].values)
+            
+            raise Exception(pred_top_k['relevance'].values, self.original['rating'].values)
             wandb.log({"episode": self.total_episodes, "NDCG": ndcg_, "MAP": mape_})
             self.total_ndsg.append(ndcg_)
             self.total_mape.append(mape_)
