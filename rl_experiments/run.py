@@ -1,15 +1,7 @@
 import numpy as np
-import wandb
 from d3rlpy.dataset import MDPDataset
-from d3rlpy.metrics.scorer import evaluate_on_environment
-from pyspark.sql import DataFrame
+from pandas import DataFrame
 from rs_datasets import MovieLens
-
-from replay.models.rl.sdac.sdac_impl import SDAC
-from rl_experiments.utils.encoders import CustomEncoderFactory
-from rl_experiments.utils.fake_recommender_env import FakeRecomenderEnv
-
-wandb.init(project="RecommendationsSDAC", group = "MovieLens_SDAC")
 
 
 def _prepare_data(log: DataFrame) -> MDPDataset:
@@ -76,7 +68,6 @@ def _prepare_data(log: DataFrame) -> MDPDataset:
 
     # cannot set zero scale as d3rlpy will treat transitions as discrete :/
 
-
     #разбиение на трейн тест
     user_id_list = list(set(user_logs['timestamp']))
     count_of_test = int(test_size*len(user_id_list))
@@ -96,7 +87,7 @@ def _prepare_data(log: DataFrame) -> MDPDataset:
         rewards=user_logs_train['rewards'],
         terminals=user_logs_train['terminals']
     )
-    #  print( user_logs_test['rating'])
+  #  print( user_logs_test['rating'])
     test_dataset = MDPDataset(
         observations=np.array(user_logs_test[['user_id', 'item_id']]),
         actions=np.array(
@@ -107,18 +98,27 @@ def _prepare_data(log: DataFrame) -> MDPDataset:
     )
     return train_dataset, user_logs_train,test_dataset, user_logs_test
 
-        
-if __name__ == "__main__":
-    #wandb.init(project="RecommendationsSDAC", group = "MovieLens_SDAC")
+
+def main():
+    # wandb.init(project="RecommendationsSDAC", group="MovieLens_SDAC")
+    # wandb.init(project="RecommendationsSDAC", group = "MovieLens_SDAC")
     ds = MovieLens(version="1m")
-    train_dataset,user_logs_train, test_dataset, users_logs_test = _prepare_data(ds.ratings)
-    #encoder_factory=CustomEncoderFactory(64)
-    sdac = SDAC(use_gpu=False, actor_encoder_factory=CustomEncoderFactory(64), critic_encoder_factory=CustomEncoderFactory(64),encoder_factory=CustomEncoderFactory(64))
-    env = FakeRecomenderEnv(users_logs_test[:10000], 10)
-    evaluate_scorer = evaluate_on_environment(env)
-    sdac.fit(train_dataset,
-        eval_episodes=train_dataset,
-        n_epochs=100,
-        scorers={'environment': evaluate_scorer})
-        
- 
+    train_dataset, user_logs_train, test_dataset, users_logs_test = _prepare_data(ds.ratings)
+    # encoder_factory=CustomEncoderFactory(64)
+    # sdac = SDAC(
+    #     use_gpu=False,
+    #     actor_encoder_factory=CustomEncoderFactory(64),
+    #     critic_encoder_factory=CustomEncoderFactory(64), encoder_factory=CustomEncoderFactory(64)
+    # )
+    # env = FakeRecomenderEnv(users_logs_test[:10000], 10)
+    # evaluate_scorer = evaluate_on_environment(env)
+    # sdac.fit(
+    #     train_dataset,
+    #     eval_episodes=train_dataset,
+    #     n_epochs=100,
+    #     scorers={'environment': evaluate_scorer}
+    # )
+
+
+if __name__ == "__main__":
+    main()
