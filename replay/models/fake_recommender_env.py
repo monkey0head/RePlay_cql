@@ -72,7 +72,7 @@ class FakeRecomenderEnv(gym.Env):
             pred_top_k = pred_df.sort_values(['relevance'])[::-1][:self.top_k]
           #  print(pred_top_k)
             indx = pred_top_k['item_hist'].values
-            original.set_index('item_idx', inplace=True)            
+            self.original.set_index('item_idx', inplace=True)            
             original_masked = self.original.loc[indx]
             ndcg_ = ndcg( self.top_k, pred_top_k['relevance'].values, self.original['rating'].values)
             mape_ = mape( self.top_k, pred_top_k['relevance'].values, self.original['rating'].values)
