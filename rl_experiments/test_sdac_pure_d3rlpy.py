@@ -7,7 +7,7 @@ from pyspark.sql import DataFrame
 import numpy as np
 from d3rlpy.metrics.scorer import evaluate_on_environment
 from replay.models.rl.sdac.sdac_impl import SDAC
-from fake_recommender_env import FakeRecomenderEnv
+from rl_experiments.utils.fake_recommender_env import FakeRecomenderEnv
 from d3rlpy.models.torch.encoders import _VectorEncoder, EncoderWithAction, VectorEncoder
 from typing import Optional, Sequence
 import d3rlpy
