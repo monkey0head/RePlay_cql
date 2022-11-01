@@ -151,3 +151,6 @@ docs/_build/
 
 ### d3rlpy logs
 d3rlpy_logs/
+
+# Wandb logs
+wandb/
