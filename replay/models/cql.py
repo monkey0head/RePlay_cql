@@ -103,7 +103,7 @@ class RLRecommender(Recommender):
         if self.test_log:
             _, val_df = self._prepare_data(self.test_log, True)
            # raise Exception (len(self.test_log))
-        env = FakeRecomenderEnv(val_df[:10000], 10)
+        env = FakeRecomenderEnv(val_df[:10000], self.k)
         evaluate_scorer = evaluate_on_environment(env)
 	
         if self.fitter is None:
