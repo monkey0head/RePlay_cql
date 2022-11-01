@@ -76,8 +76,8 @@ class FakeRecomenderEnv(gym.Env):
             self.original.set_index('item_idx', inplace=True)    
           #  print(self.original.index)      
             original_masked = self.original.loc[indx]
-            ndcg_ = ndcg( self.top_k, pred_top_k['relevance'].values, self.original['rating'].values)
-            mape_ = mape( self.top_k, pred_top_k['relevance'].values, self.original['rating'].values)
+            ndcg_ = ndcg( self.top_k, pred_top_k['relevance'].values, original_masked['rating'].values)
+            mape_ = mape( self.top_k, pred_top_k['relevance'].values, original_masked['rating'].values)
             
            # print(pred_top_k['relevance'].values, self.original['rating'].values)
             wandb.log({"episode": self.total_episodes, "NDCG": ndcg_, "MAP": mape_})
