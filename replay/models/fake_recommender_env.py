@@ -28,10 +28,10 @@ def mape(k, pred, ground_truth) -> float:
         return result      
         
 
-def original_for_user(df, target, k):
+def original_for_user(df, target, k = 10):
     mask = df['user_idx'] == target
     user_relevance = df[mask]
-    return user_relevance.sort_values(['rating'])[::-1]
+    return user_relevance.sort_values(['rating'])[::-1][:k]
    
 
 class FakeRecomenderEnv(gym.Env):
@@ -70,18 +70,8 @@ class FakeRecomenderEnv(gym.Env):
             pred_df = pd.DataFrame({'user_idx': self.user_hist, 'item_hist': self.item_hist,
                                     'relevance': self.relevance_hist})
             pred_top_k = pred_df.sort_values(['relevance'])[::-1][:self.top_k]
-          #  print(pred_top_k)
-            indx = pred_top_k['item_hist'].values
-           # print(indx)
-            self.original.set_index('item_idx', inplace=True)    
-          #  print(self.original.index)      
-            original_masked = self.original.loc[indx]
-            
-            print(original_masked)
-            
-            print(pred_top_k)
-            ndcg_ = ndcg( self.top_k, pred_top_k['relevance'].values, original_masked['rating'].values)
-            mape_ = mape( self.top_k, pred_top_k['relevance'].values, original_masked['rating'].values)
+            ndcg_ = ndcg( self.top_k, pred_top_k['item_hist'].values, self.original['item_idx'].values)
+            mape_ = mape( self.top_k, pred_top_k['item_hist'].values, self.original['item_idx'].values)
             
            # print(pred_top_k['relevance'].values, self.original['rating'].values)
             wandb.log({"episode": self.total_episodes, "NDCG": ndcg_, "MAP": mape_})
