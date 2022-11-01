@@ -28,10 +28,10 @@ def mape(k, pred, ground_truth) -> float:
         return result      
         
 
-def original_for_user(df, target, k = 10):
+def original_for_user(df, target, k):
     mask = df['user_idx'] == target
     user_relevance = df[mask]
-    return user_relevance.sort_values(['rating'])[::-1][:k]
+    return user_relevance.sort_values(['rating'])[::-1]
    
 
 class FakeRecomenderEnv(gym.Env):
