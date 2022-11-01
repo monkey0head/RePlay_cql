@@ -25,4 +25,3 @@ from replay.models.wilson import Wilson
 from replay.models.word2vec import Word2VecRec
 from replay.models.cluster import ClusterRec
 from replay.models.ucb import UCB
-from replay.models.rl.cql import CQL

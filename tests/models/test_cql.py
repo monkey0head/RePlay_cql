@@ -5,7 +5,7 @@ import pytest
 from pyspark.sql import DataFrame
 
 from replay.constants import LOG_SCHEMA
-from replay.models import CQL
+from replay.models.rl.cql import CQL
 # noinspection PyUnresolvedReferences
 from tests.utils import spark
 
