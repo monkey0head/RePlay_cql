@@ -76,6 +76,10 @@ class FakeRecomenderEnv(gym.Env):
             self.original.set_index('item_idx', inplace=True)    
           #  print(self.original.index)      
             original_masked = self.original.loc[indx]
+            
+            print(original_masked)
+            
+            print(pred_top_k)
             ndcg_ = ndcg( self.top_k, pred_top_k['relevance'].values, original_masked['rating'].values)
             mape_ = mape( self.top_k, pred_top_k['relevance'].values, original_masked['rating'].values)
             
