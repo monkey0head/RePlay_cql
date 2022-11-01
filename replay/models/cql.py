@@ -2,18 +2,22 @@
 Using CQL implementation from `d3rlpy` package.
 For 'alpha' version PySpark DataFrame are converted to Pandas
 """
-
+import io
+import os.path
+import pickle
 from typing import Optional
 
 import d3rlpy.algos.cql as CQL_d3rlpy
 import numpy as np
 import pandas as pd
+import torch.jit
 from d3rlpy.argument_utility import (
     EncoderArg, QFuncArg, UseGPUArg, ScalerArg, ActionScalerArg,
     RewardScalerArg
 )
 from d3rlpy.dataset import MDPDataset
 from d3rlpy.models.optimizers import OptimizerFactory, AdamFactory
+from d3rlpy.torch_utility import freeze, unfreeze, eval_api
 from pyspark.sql import DataFrame, functions as sf
 
 from replay.constants import REC_SCHEMA
@@ -241,10 +245,39 @@ class CQL(Recommender):
             'user_idx': np.repeat(user_idx, len(items)),
             'item_idx': items
         })
-        user_item_pairs['relevance'] = model.predict_best_action(user_item_pairs.to_numpy())
+        print('===>')
+        # with io.BytesIO(model) as buffer:
+        #     model = torch.load(buffer, map_location=torch.device('cpu'))
+
+        with io.BytesIO(model) as buffer:
+            model = torch.jit.load(buffer, map_location=torch.device('cpu'))
+
+        inp = torch.from_numpy(user_item_pairs.to_numpy()).float().cpu()
+
+        # user_item_pairs['relevance'] = model.predict_best_action(user_item_pairs.to_numpy())
+        # res = model.forward(inp).numpy()
+        # print(type(res))
+        # print(res)
+        # print(
+        #     model.forward(
+        #         torch.from_numpy(
+        #             user_item_pairs.to_numpy()[:2]
+        #         ).float()
+        #     ).detach().cpu().numpy()
+        # )
+        t = min(inp.size(dim=0), 10)
+        print('size=', inp.size(dim=0), 't=', t)
+        with torch.no_grad():
+            print(
+                model.forward(inp[:, :]).numpy()
+            )
+        res = np.repeat(1., len(items))
 
         # it doesn't explicitly filter seen items and doesn't return top k items
         # instead, it keeps all predictions as is to be filtered further by base methods
+
+        user_item_pairs['relevance'] = res
+        print('<===')
         return user_item_pairs
 
     # pylint: disable=too-many-arguments
@@ -260,15 +293,73 @@ class CQL(Recommender):
     ) -> DataFrame:
         available_items = items.toPandas()["item_idx"].values
 
+        # torch.save(self.model._impl, './policy.pt')
+
+        self.model._impl.to_cpu()
+        freeze(self.model._impl)
+        self.save_policy(self.model._impl, './policy.pt', batch_size=10) #len(available_items))
+
+        model = torch.jit.load('./policy.pt', map_location=torch.device('cpu'))
+        user_item_pairs = pd.DataFrame(
+            {
+                'user_idx': np.repeat(1, len(available_items)),
+                'item_idx': available_items
+            }
+        )
+        inp = torch.from_numpy(user_item_pairs.to_numpy()).float().cpu()
+        t = min(inp.size(dim=0), 10)
+        print('size=', inp.size(dim=0), 't=', t)
+        with torch.no_grad():
+            print(
+                model.forward(inp[:, :]).numpy()
+            )
+
+        with open('./policy.pt', 'rb') as policy_file:
+            model = policy_file.read()
+
+        print(len(model))
+
         def grouped_map(log_slice: pd.DataFrame) -> pd.DataFrame:
-            return self._rate_user_items(
-                model=self.model._impl,
+            return CQL._rate_user_items(
+                model=model,
                 user_idx=log_slice["user_idx"][0],
                 items=available_items,
             )[["user_idx", "item_idx", "relevance"]]
 
         self.logger.debug("Predict started")
-        return users.groupby("user_idx").applyInPandas(grouped_map, REC_SCHEMA)
+        res = users.groupby("user_idx").applyInPandas(grouped_map, REC_SCHEMA)
+        res = res.cache()
+        res.count()
+
+        print('FINISH')
+        # unfreeze(self.model._impl)
+        return res
+
+    @staticmethod
+    @eval_api
+    def save_policy(model, fname: str, batch_size) -> None:
+        dummy_x = torch.rand(batch_size, *model.observation_shape, device=model._device)
+
+        # workaround until version 1.6
+        freeze(model)
+
+        # dummy function to select best actions
+        def _func(x: torch.Tensor) -> torch.Tensor:
+            if model._scaler:
+                x = model._scaler.transform(x)
+
+            action = model._predict_best_action(x)
+
+            if model._action_scaler:
+                action = model._action_scaler.reverse_transform(action)
+
+            return action
+
+        traced_script = torch.jit.trace(_func, dummy_x, check_trace=False)
+        traced_script.save(fname)
+
+        # workaround until version 1.6
+        unfreeze(model)
 
     def _predict_pairs(
         self,
@@ -309,8 +400,18 @@ class CQL(Recommender):
         user_features: Optional[DataFrame] = None,
         item_features: Optional[DataFrame] = None,
     ) -> None:
-        train: MDPDataset = self._prepare_data(log)
-        self.model.fit(train, n_epochs=self.n_epochs)
+        if os.path.exists('./train_mdp.pkl'):
+            train: MDPDataset = MDPDataset.load('./train_mdp.pkl')
+        else:
+            train: MDPDataset = self._prepare_data(log)
+            train.dump('./train_mdp.pkl')
+
+        if os.path.exists('./cql_model.pkl'):
+            self.model.build_with_dataset(train)
+            self.model.load_model('./cql_model.pkl')
+        else:
+            self.model.fit(train, n_epochs=self.n_epochs)
+            self.model.save_model('./cql_model.pkl')
 
     def _prepare_data(self, log: DataFrame) -> MDPDataset:
         # TODO: consider making calculations in Spark before converting to pandas
