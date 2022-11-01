@@ -1,19 +1,20 @@
-from typing import Any
-from pyspark.sql import DataFrame
+from typing import Any, Optional, Sequence
+
+import d3rlpy
+import torch
+import torch.nn.functional as F
 from d3rlpy.argument_utility import (
     EncoderArg, QFuncArg, UseGPUArg, ScalerArg, ActionScalerArg,
     RewardScalerArg
 )
 from d3rlpy.models.optimizers import OptimizerFactory, AdamFactory
+from d3rlpy.models.torch.encoders import _VectorEncoder, EncoderWithAction, VectorEncoder
+from pyspark.sql import DataFrame
+from torch import nn
 
 import replay.models.rl.sdac.sdac_impl as sdac_impl
-from replay.models.rl.cql import RLRecommender
-from d3rlpy.models.torch.encoders import _VectorEncoder, EncoderWithAction, VectorEncoder
-from typing import Optional, Sequence
-import d3rlpy
-import torch
-import torch.nn.functional as F
-from torch import nn
+from replay.models.rl.rl_recommender import RLRecommender
+
 
 class VectorEncoderWithAction(_VectorEncoder, EncoderWithAction):
 
@@ -67,6 +68,7 @@ class VectorEncoderWithAction(_VectorEncoder, EncoderWithAction):
     def action_size(self) -> int:
         return self._action_size
 
+
 class CustomEncoderFactory(d3rlpy.models.encoders.EncoderFactory):
     TYPE = "custom"
 
@@ -77,11 +79,14 @@ class CustomEncoderFactory(d3rlpy.models.encoders.EncoderFactory):
         return VectorEncoder(observation_shape, [self.feature_size, self.feature_size])
 
     def create_with_action(self, observation_shape, action_size):
-        return VectorEncoderWithAction(observation_shape, action_size, [self.feature_size, self.feature_size])
+        return VectorEncoderWithAction(
+            observation_shape, action_size, [self.feature_size, self.feature_size]
+        )
 
     def get_params(self, deep=False):
         return {"feature_size": self.feature_size}
-        
+
+
 class SDAC(RLRecommender):
     r"""FIXME: add docstring"""
 
@@ -157,7 +162,7 @@ class SDAC(RLRecommender):
 
         super(SDAC, self).__init__(
             model=model,
-            test_log = test_log,
+            test_log=test_log,
             top_k=top_k, n_epochs=n_epochs,
             action_randomization_scale=0,
             use_negative_events=use_negative_events,

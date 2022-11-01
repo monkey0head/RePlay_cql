@@ -11,7 +11,7 @@ from d3rlpy.argument_utility import (
 from d3rlpy.models.optimizers import OptimizerFactory, AdamFactory
 from pyspark.sql import DataFrame
 
-from replay.models.rl.cql import RLRecommender
+from replay.models.rl.rl_recommender import RLRecommender
 
 
 class CRR(RLRecommender):
@@ -187,6 +187,7 @@ class CRR(RLRecommender):
 
         super(CRR, self).__init__(
             model=model,
+            test_log=test_log,
             top_k=top_k, n_epochs=n_epochs,
             action_randomization_scale=action_randomization_scale,
             use_negative_events=use_negative_events,

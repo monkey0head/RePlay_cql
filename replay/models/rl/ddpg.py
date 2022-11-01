@@ -1,6 +1,4 @@
 import pickle
-import tqdm
-from collections import defaultdict
 from pathlib import Path
 from typing import Any, Dict, Optional
 
@@ -9,6 +7,7 @@ import pandas as pd
 import scipy.sparse as sp
 import torch
 import torch.utils.data as td
+import tqdm
 from pandas import DataFrame
 from pytorch_ranger import Ranger
 from torch import nn

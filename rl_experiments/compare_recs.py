@@ -228,7 +228,7 @@ class BareRatingsRunner:
 
     def run(self):
         from replay.models import TorchRecommender
-        from replay.models.rl.cql import RLRecommender
+        from replay.models.rl.rl_recommender import RLRecommender
 
         for model_name in tqdm.tqdm(self.models.keys(), desc='Model'):
             model, train = self.models[model_name]
@@ -413,9 +413,6 @@ def parse_args():
 
 
 def main():
-    # os.environ['OMP_NUM_THREADS'] = '1'
-    # os.environ['MKL_NUM_THREADS'] = '1'
-
     # shenanigans to turn off countless warnings to clear output
     logging.captureWarnings(True)
     warnings.filterwarnings("ignore", category=UserWarning, append=True)
