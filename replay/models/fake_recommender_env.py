@@ -39,7 +39,7 @@ class FakeRecomenderEnv(gym.Env):
         self.action_space = gym.spaces.Discrete(5)
         self.observation_space = Box(0,100000, (2,))
         self.log_data = test_data
-        self.top_k = 20
+        self.top_k = top_k
         self.steps = 0
         self.episode_num = 0
         self.total_ndsg = []
@@ -73,7 +73,7 @@ class FakeRecomenderEnv(gym.Env):
             ndcg_ = ndcg( self.top_k, pred_top_k['item_hist'].values, self.original['item_idx'].values)
             mape_ = mape( self.top_k, pred_top_k['item_hist'].values, self.original['item_idx'].values)
             
-           # print(pred_top_k['relevance'].values, self.original['rating'].values)
+            print(pred_top_k['item_hist'].values, self.original['item_idx'].values, ndcg_)
             wandb.log({"episode": self.total_episodes, "NDCG": ndcg_, "MAP": mape_})
             self.total_ndsg.append(ndcg_)
             self.total_mape.append(mape_)
