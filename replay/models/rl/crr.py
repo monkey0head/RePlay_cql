@@ -3,22 +3,15 @@ Using CQL implementation from `d3rlpy` package.
 For 'alpha' version PySpark DataFrame are converted to Pandas
 """
 
-from typing import Optional, Callable
-
 import d3rlpy.algos.crr as CRR_d3rlpy
-import numpy as np
-import pandas as pd
 from d3rlpy.argument_utility import (
     EncoderArg, QFuncArg, UseGPUArg, ScalerArg, ActionScalerArg,
     RewardScalerArg
 )
-from d3rlpy.dataset import MDPDataset
 from d3rlpy.models.optimizers import OptimizerFactory, AdamFactory
 from pyspark.sql import DataFrame
 
-from replay.data_preparator import DataPreparator
-from replay.models import Recommender
-from replay.models.cql import RLRecommender
+from replay.models.rl.cql import RLRecommender
 
 
 class CRR(RLRecommender):

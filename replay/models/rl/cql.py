@@ -3,7 +3,7 @@ Using CQL implementation from `d3rlpy` package.
 For 'alpha' version PySpark DataFrame are converted to Pandas
 """
 
-from typing import Optional, Callable
+from typing import Optional
 from d3rlpy.metrics.scorer import evaluate_on_environment
 import d3rlpy.algos.cql as CQL_d3rlpy
 import numpy as np
@@ -19,7 +19,7 @@ from pyspark.sql import functions as sf, DataFrame
 
 from replay.data_preparator import DataPreparator
 from replay.models import Recommender
-from replay.models.fake_recommender_env import FakeRecomenderEnv
+from replay.models.rl.fake_recommender_env import FakeRecomenderEnv
 
 class RLRecommender(Recommender):
     top_k: int

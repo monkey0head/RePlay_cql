@@ -8,7 +8,6 @@ from math import floor
 from typing import Union
 
 import numpy as np
-import pandas as pd
 import psutil
 import torch
 import tqdm
@@ -229,7 +228,7 @@ class BareRatingsRunner:
 
     def run(self):
         from replay.models import TorchRecommender
-        from replay.models.cql import RLRecommender
+        from replay.models.rl.cql import RLRecommender
 
         for model_name in tqdm.tqdm(self.models.keys(), desc='Model'):
             model, train = self.models[model_name]
@@ -313,16 +312,16 @@ class BareRatingsRunner:
         models = {}
         for alg in algorithms:
             if alg == 'cql':
-                from replay.models.cql import CQL
+                from replay.models.rl.cql import CQL
                 models['CQL'] = build_rl_recommender(CQL, self.dataset.raw_test), self.dataset.raw_train
             elif alg == 'sdac':
-                from replay.models.sdac.sdac import SDAC
+                from replay.models.rl.sdac.sdac import SDAC
                 models['SDAC'] = build_rl_recommender(SDAC, self.dataset.raw_test), self.dataset.raw_train
             elif alg == 'crr':
-                from replay.models.crr import CRR
+                from replay.models.rl.crr import CRR
                 models['CRR'] = build_rl_recommender(CRR, self.dataset.raw_test), self.dataset.raw_train
             elif alg == 'ddpg':
-                from replay.models.ddpg import DDPG
+                from replay.models.rl.ddpg import DDPG
                 # full-log nums => I take an upper-bound
                 user_num = self.dataset.users.count()
                 item_num = self.dataset.items.count()

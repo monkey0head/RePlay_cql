@@ -12,7 +12,7 @@ from d3rlpy.models.encoders import EncoderFactory
 from d3rlpy.models.optimizers import OptimizerFactory, AdamFactory
 from d3rlpy.torch_utility import TorchMiniBatch
 
-from replay.models.sdac.policies import GumbelPolicy
+from replay.models.rl.sdac.policies import GumbelPolicy
 
 
 def create_gumbel_policy(

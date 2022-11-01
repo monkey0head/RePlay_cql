@@ -6,6 +6,7 @@ from pyspark.sql import DataFrame
 
 from replay.constants import LOG_SCHEMA
 from replay.models import CQL
+# noinspection PyUnresolvedReferences
 from tests.utils import spark
 
 

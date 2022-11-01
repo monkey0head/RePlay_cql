@@ -2,20 +2,14 @@ import wandb
 wandb.init(project="RecommendationsSDAC", group = "MovieLens_SDAC")
 
 from rs_datasets import MovieLens
-from d3rlpy.base import LearnableBase
 from d3rlpy.dataset import MDPDataset
-from d3rlpy.models.optimizers import OptimizerFactory, AdamFactory
-from pyspark.sql import functions as sf, DataFrame
+from pyspark.sql import DataFrame
 import numpy as np
-from typing import Optional, Callable
-import pandas as pd
 from d3rlpy.metrics.scorer import evaluate_on_environment
-from replay.models.sdac.sdac_impl import SDAC
-from replay.models.cql import CQL
+from replay.models.rl.sdac.sdac_impl import SDAC
 from fake_recommender_env import FakeRecomenderEnv
 from d3rlpy.models.torch.encoders import _VectorEncoder, EncoderWithAction, VectorEncoder
-from abc import ABCMeta, abstractmethod
-from typing import List, Optional, Sequence
+from typing import Optional, Sequence
 import d3rlpy
 import torch
 import torch.nn.functional as F

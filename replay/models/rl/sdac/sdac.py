@@ -1,16 +1,15 @@
-from typing import Optional, Any, Callable
-from pyspark.sql import functions as sf, DataFrame
+from typing import Any
+from pyspark.sql import DataFrame
 from d3rlpy.argument_utility import (
     EncoderArg, QFuncArg, UseGPUArg, ScalerArg, ActionScalerArg,
     RewardScalerArg
 )
 from d3rlpy.models.optimizers import OptimizerFactory, AdamFactory
 
-import replay.models.sdac.sdac_impl as sdac_impl
-from replay.models.cql import RLRecommender
+import replay.models.rl.sdac.sdac_impl as sdac_impl
+from replay.models.rl.cql import RLRecommender
 from d3rlpy.models.torch.encoders import _VectorEncoder, EncoderWithAction, VectorEncoder
-from abc import ABCMeta, abstractmethod
-from typing import List, Optional, Sequence
+from typing import Optional, Sequence
 import d3rlpy
 import torch
 import torch.nn.functional as F
