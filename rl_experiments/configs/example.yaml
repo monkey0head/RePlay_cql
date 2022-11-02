@@ -1,0 +1,9 @@
+# runner type tag
+_type_: test.pipeline
+# wandb project
+project: recsys_pipeline
+# wandb logging
+log: True
+
+seed: 42
+debug: False
