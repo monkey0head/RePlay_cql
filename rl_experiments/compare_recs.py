@@ -24,6 +24,7 @@ from replay.utils import get_log_info
 import wandb
 wandb.init(project="ReplayRecommendations", group = "MovieLens")
 
+
 class RatingsDataset:
     name: str
     category: str
