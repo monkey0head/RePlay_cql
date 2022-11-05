@@ -40,7 +40,7 @@ class TestPipelineExperiment(Runner):
             train_dataset, user_logs_train, test_dataset, users_logs_test
         ) = self.prepare_mdp_dataset(log)
 
-        from replay.models.rl.sdac.sdac_impl import SDAC
+        from replay.models.rl.sdac.sdac import SDAC
         from rl_experiments.utils.encoders import CustomEncoderFactory
         from rl_experiments.utils.fake_recommender_env import FakeRecomenderEnv
         from d3rlpy.metrics import evaluate_on_environment

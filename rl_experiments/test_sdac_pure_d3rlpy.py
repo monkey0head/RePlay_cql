@@ -5,7 +5,7 @@ from d3rlpy.metrics.scorer import evaluate_on_environment
 from pyspark.sql import DataFrame
 from rs_datasets import MovieLens
 
-from replay.models.rl.sdac.sdac_impl import SDAC
+from replay.models.rl.sdac.sdac import SDAC
 from rl_experiments.utils.encoders import CustomEncoderFactory
 from rl_experiments.utils.fake_recommender_env import FakeRecomenderEnv
 

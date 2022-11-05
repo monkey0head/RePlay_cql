@@ -4,7 +4,7 @@ import torch
 from d3rlpy.models.torch import Encoder, CategoricalPolicy
 from torch import nn
 
-from replay.models.rl.sdac.distributions import GumbelDistribution
+from replay.models.rl.sdac.gumbel_distribution import GumbelDistribution
 
 
 class GumbelPolicy(CategoricalPolicy):

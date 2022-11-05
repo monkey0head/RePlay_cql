@@ -1,43 +1,8 @@
-import datetime
 from typing import Tuple
 
 import numpy as np
 import torch
 from d3rlpy.models.torch.distributions import Distribution
-
-
-def p_print(data):
-    now = datetime.datetime.now()
-    if now.microsecond % 12 == 0:
-        print(data)
-    else:
-        pass
-
-
-def gumbel_pdf(x, loc: float, scale) -> torch.Tensor:
-    """Returns Gumbel's PDF with parameters loc and scale at x."""
-    # substitute
-    z = (x - loc) / scale
-
-    return (1. / scale) * (torch.exp(-(z + (torch.exp(-z)))))
-
-
-def gumbel_cdf(x, loc, scale) -> torch.Tensor:
-    """Returns the value of Gumbel's cdf with parameters loc and scale at x."""
-    z = (x - loc) / scale
-    return torch.exp(-torch.exp(-z))
-
-
-def trunc_GBL(p, x):
-    threshold = p[0]
-    loc = p[1]
-    scale = p[2]
-    x1 = x[x < threshold]
-    nx2 = len(x[x >= threshold])
-    L1 = (-torch.log((gumbel_pdf(x1, loc, scale) / scale))).sum()
-    L2 = (-torch.log(1 - gumbel_cdf(threshold, loc, scale))) * nx2
-    # print x1, nx2, L1, L2
-    return L1 + L2
 
 
 class GumbelDistribution(Distribution):

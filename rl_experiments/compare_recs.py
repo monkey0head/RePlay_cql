@@ -313,16 +313,16 @@ class BareRatingsRunner:
         models = {}
         for alg in algorithms:
             if alg == 'cql':
-                from replay.models.rl.cql import CQL
-                models['CQL'] = build_rl_recommender(CQL, self.dataset.raw_test), self.dataset.raw_train
+                from replay.models.rl.cql_recommender import CQLRecommender
+                models['CQL'] = build_rl_recommender(CQLRecommender, self.dataset.raw_test), self.dataset.raw_train
             elif alg == 'sdac':
-                from replay.models.rl.sdac.sdac import SDAC
-                models['SDAC'] = build_rl_recommender(SDAC, self.dataset.raw_test), self.dataset.raw_train
+                from replay.models.rl.sdac.sdac_recommender import SDACRecommender
+                models['SDAC'] = build_rl_recommender(SDACRecommender, self.dataset.raw_test), self.dataset.raw_train
             elif alg == 'crr':
-                from replay.models.rl.crr import CRR
-                models['CRR'] = build_rl_recommender(CRR, self.dataset.raw_test), self.dataset.raw_train
+                from replay.models.rl.crr_recommender import CRRRecommender
+                models['CRR'] = build_rl_recommender(CRRRecommender, self.dataset.raw_test), self.dataset.raw_train
             elif alg == 'ddpg':
-                from replay.models.rl.ddpg import DDPG
+                from replay.models.rl.ddpg_recommender import DDPG
                 # full-log nums => I take an upper-bound
                 user_num = self.dataset.users.count()
                 item_num = self.dataset.items.count()

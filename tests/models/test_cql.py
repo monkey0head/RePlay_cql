@@ -5,7 +5,7 @@ import pytest
 from pyspark.sql import DataFrame
 
 from replay.constants import LOG_SCHEMA
-from replay.models.rl.cql import CQL
+from replay.models.rl.cql_recommender import CQLRecommender
 # noinspection PyUnresolvedReferences
 from tests.utils import spark
 
@@ -26,11 +26,11 @@ def log(spark):
 
 @pytest.fixture
 def model():
-    model = CQL(k=1, n_epochs=1)
+    model = CQLRecommender(k=1, n_epochs=1)
     return model
 
 
-def test_works(log: DataFrame, model: CQL):
+def test_works(log: DataFrame, model: CQLRecommender):
     model.fit(log)
     recs = model.predict(log, k=1, users=[0, 1]).toPandas()
     assert recs.loc[recs["user_idx"] == 0, "item_idx"].iloc[0] == 1
