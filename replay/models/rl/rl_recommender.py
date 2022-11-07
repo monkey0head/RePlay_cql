@@ -152,7 +152,6 @@ class RLRecommender(Recommender):
             rewards[rewards > 0] /= 2
             rewards[user_top_k_idxs] += 0.5
 
-
         # every user has his own episode (the latest item is defined as terminal)
         user_terminal_idxs = (
             user_logs[::-1]

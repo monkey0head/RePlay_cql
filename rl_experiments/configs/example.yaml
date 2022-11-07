@@ -8,4 +8,26 @@ log: True
 seed: 42
 debug: False
 
-dataset: MovieLens.100k
+k: 10
+dataset:
+  name: MovieLens.100k
+  test_ratio: 0.3
+  use_negative_events: True
+  rating_based_reward: False
+  reward_top_k: True
+  rating_actions: False
+  action_randomization_scale: 0.01
+
+  raw_rating_to_reward_rescale:
+    1.0: -1.0
+    2.0: -0.3
+    3.0: 0.25
+    4.0: 0.7
+    5.0: 1.0
+
+  binary_rating_to_reward_rescale:
+    1.0: -1.0
+    2.0: -1.0
+    3.0: 1.0
+    4.0: 1.0
+    5.0: 1.0

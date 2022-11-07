@@ -9,6 +9,7 @@ from d3rlpy.dataset import MDPDataset
 
 from rl_experiments.run.runner import Runner
 from rl_experiments.utils.config import TConfig
+from rl_experiments.utils.rating_dataset import RatingDataset
 
 if TYPE_CHECKING:
     from wandb.sdk.wandb_run import Run
@@ -21,24 +22,28 @@ class TestPipelineExperiment(Runner):
     init_time: float
     seed: int
 
+    k: int
+    dataset: RatingDataset
+
     def __init__(
             self, config: TConfig, seed: int,
-            dataset: str,
+            k: int, dataset: TConfig,
             **_
     ):
         super().__init__(config, **config)
         self.init_time = time.time()
         self.print_with_timestamp('==> Init')
+
         self.seed = seed
-        self.dataset = dataset
+        self.k = k
+        self.dataset = RatingDataset(k=k, **dataset)
 
     def run(self):
         self.print_with_timestamp('==> Run')
 
-        log = self.prepare_raw_dataset()
         (
             train_dataset, user_logs_train, test_dataset, users_logs_test
-        ) = self.prepare_mdp_dataset(log)
+        ) = self.dataset.prepare()
 
         from replay.models.rl.sdac.sdac import SDAC
         from rl_experiments.utils.encoders import CustomEncoderFactory
@@ -48,9 +53,12 @@ class TestPipelineExperiment(Runner):
         sdac = SDAC(
             use_gpu=False,
             actor_encoder_factory=CustomEncoderFactory(64),
-            critic_encoder_factory=CustomEncoderFactory(64), encoder_factory=CustomEncoderFactory(64)
+            critic_encoder_factory=CustomEncoderFactory(64),
+            encoder_factory=CustomEncoderFactory(64)
         )
-        env = FakeRecomenderEnv(users_logs_test[:10000], 10)
+        env = FakeRecomenderEnv(
+            logger=self.logger, test_data=users_logs_test[:10000], top_k=self.k
+        )
         evaluate_scorer = evaluate_on_environment(env)
         sdac.fit(
             train_dataset,
