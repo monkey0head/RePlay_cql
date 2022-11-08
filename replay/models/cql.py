@@ -21,7 +21,10 @@ from d3rlpy.torch_utility import freeze, unfreeze, eval_api
 from pyspark.sql import DataFrame, functions as sf
 
 from replay.constants import REC_SCHEMA
-from replay.models import Recommender
+from replay.models.base_rec import Recommender
+
+
+print('Load models/cql.py')
 
 
 class CQL(Recommender):
@@ -265,7 +268,7 @@ class CQL(Recommender):
         #         ).float()
         #     ).detach().cpu().numpy()
         # )
-        t = min(inp.size(dim=0), 10)
+        t = min(inp.size(dim=0), 100000)
         print('size=', inp.size(dim=0), 't=', t)
         with torch.no_grad():
             print(
@@ -300,14 +303,12 @@ class CQL(Recommender):
         self.save_policy(self.model._impl, './policy.pt', batch_size=10) #len(available_items))
 
         model = torch.jit.load('./policy.pt', map_location=torch.device('cpu'))
-        user_item_pairs = pd.DataFrame(
-            {
-                'user_idx': np.repeat(1, len(available_items)),
-                'item_idx': available_items
-            }
-        )
+        user_item_pairs = pd.DataFrame({
+            'user_idx': np.repeat(1, len(available_items)),
+            'item_idx': available_items
+        })
         inp = torch.from_numpy(user_item_pairs.to_numpy()).float().cpu()
-        t = min(inp.size(dim=0), 10)
+        t = min(inp.size(dim=0), 10000)
         print('size=', inp.size(dim=0), 't=', t)
         with torch.no_grad():
             print(
@@ -332,7 +333,7 @@ class CQL(Recommender):
         res.count()
 
         print('FINISH')
-        # unfreeze(self.model._impl)
+        unfreeze(self.model._impl)
         return res
 
     @staticmethod

@@ -1,83 +1,32 @@
-import logging
 import os
-import time
 import warnings
 from argparse import ArgumentParser
 from math import floor
 
+import numpy as np
 import pandas as pd
 import psutil
 import torch
-import tqdm
+from d3rlpy.torch_utility import eval_api, freeze, unfreeze
 from optuna.exceptions import ExperimentalWarning
-from pyspark.sql import functions as sf
 
-from replay.data_preparator import DataPreparator, Indexer
-from replay.experiment import Experiment
-from replay.metrics import HitRate, NDCG, MAP, MRR, Coverage, Surprisal
-from replay.models import UCB, CQL, Wilson, Recommender
+from replay.constants import REC_SCHEMA
 from replay.session_handler import State, get_spark_session
-from replay.splitters import DateSplitter
-from replay.utils import get_log_info
 
 
-def fit_predict_add_res(
-        name: str, model: Recommender, experiment: Experiment,
-        train: pd.DataFrame, top_k: int, test_users: pd.DataFrame
-):
-    """
-    Run fit_predict for the `model`, measure time on fit_predict and evaluate metrics
-    """
-    start_time = time.time()
-
-    model.fit(log=train)
-    fit_time = time.time() - start_time
-
-    pred = model.predict(log=train, k=top_k, users=test_users)
-    pred.cache()
-    pred.count()
-    predict_time = time.time() - start_time - fit_time
-
-    experiment.add_result(name, pred)
-    metric_time = time.time() - start_time - fit_time - predict_time
-
-    experiment.results.loc[name, 'fit_time'] = fit_time
-    experiment.results.loc[name, 'predict_time'] = predict_time
-    experiment.results.loc[name, 'metric_time'] = metric_time
-    experiment.results.loc[name, 'full_time'] = (fit_time + predict_time + metric_time)
-    pred.unpersist()
-
-
-def get_dataset(ds_name: str) -> tuple[pd.DataFrame, dict[str, str]]:
-    ds_name, category = ds_name.split('.')
-
-    if ds_name == 'MovieLens':
-        from rs_datasets import MovieLens
-        ml = MovieLens(category)
-    elif ds_name == 'Amazon':
-        from rs_datasets import Amazon
-        ml = Amazon(category=category)
-    else:
-        raise KeyError()
-
-    col_mapping = {
-        'user_id': 'user_id',
-        'item_id': 'item_id',
-        'relevance': 'rating',
-        'timestamp': 'timestamp'
-    }
-    return ml.ratings, col_mapping
+print('Load test.py')
 
 
 def main():
     warnings.filterwarnings("ignore", category=UserWarning)
     warnings.filterwarnings("ignore", category=ExperimentalWarning)
+    torch.set_num_threads(1)
+    os.environ['OMP_NUM_THREADS'] = '1'
+    os.environ['MKL_NUM_THREADS'] = '1'
 
     use_gpu = torch.cuda.is_available()
 
     parser = ArgumentParser()
-    parser.add_argument('--ds', dest='dataset', required=False, default='MovieLens.100k')
-    parser.add_argument('--epochs', dest='epochs', nargs='*', type=int, required=True)
     parser.add_argument('--part', dest='partitions', type=float, required=False, default=0.8)
     parser.add_argument('--mem', dest='memory', type=float, required=False, default=0.7)
     parser.add_argument(
@@ -85,8 +34,6 @@ def main():
     )
 
     args = parser.parse_args()
-    ds = args.dataset
-    n_epochs: set[int] = set(args.epochs)
 
     spark = get_spark_session(
         spark_memory=floor(psutil.virtual_memory().total / 1024 ** 3 * args.memory),
@@ -96,89 +43,126 @@ def main():
     spark.sparkContext.setLogLevel('ERROR')
 
     K = 10
-    K_list_metrics = [1, 5, 10]
-
-    if os.path.exists('./train.parquet'):
-        train = spark.read.parquet('./train.parquet')
-        test = spark.read.parquet('./test.parquet')
-    else:
-        df_log, col_mapping = get_dataset(ds)
-
-        data_preparator = DataPreparator()
-        log = data_preparator.transform(columns_mapping=col_mapping, data=df_log)
-
-        indexer = Indexer()
-        indexer.fit(users=log.select('user_id'), items=log.select('item_id'))
-
-        # will consider ratings >= 3 as positive feedback.
-        # A positive feedback is treated with relevance = 1
-        only_positives_log = log.filter(sf.col('relevance') >= 3).withColumn('relevance', sf.lit(1.))
-        # negative feedback will be used for Wilson and UCB models
-        only_negatives_log = log.filter(sf.col('relevance') < 3).withColumn('relevance', sf.lit(0.))
-
-        pos_log = indexer.transform(df=only_positives_log)
-
-        # train/test split
-        date_splitter = DateSplitter(
-            test_start=0.2,
-            drop_cold_items=True,
-            drop_cold_users=True,
-
-        )
-        train, test = date_splitter.split(pos_log)
-        train.cache(), test.cache()
-        train.write.parquet('./train.parquet')
-        test.write.parquet('./test.parquet')
-        print('train info:\n', get_log_info(train))
-        print('test info:\n', get_log_info(test))
-
-        test_start = test.agg(sf.min('timestamp')).collect()[0][0]
-
-        # train with both positive and negative feedback
-        pos_neg_train = (
-            train
-            .withColumn('relevance', sf.lit(1.))
-            .union(
-                indexer.transform(
-                    only_negatives_log.filter(sf.col('timestamp') < test_start)
-                )
-            )
-        )
-        pos_neg_train.cache()
-        pos_neg_train.count()
-
-    experiment = Experiment(test, {
-        MAP(): K, NDCG(): K, HitRate(): K_list_metrics, Coverage(train): K, Surprisal(train): K,
-        MRR(): K
-    })
-
-    algorithms = {
-        f'CQL_{e}': CQL(
-            use_gpu=use_gpu, top_k=K, n_epochs=e,
-            action_randomization_scale=args.action_randomization_scale,
-            batch_size=2048
-        )
-        for e in n_epochs
-    }
-    logger = logging.getLogger("replay")
+    train = spark.read.parquet('./train.parquet')
+    test = spark.read.parquet('./test.parquet')
+    test = test.drop('timestamp')
     test_users = test.select('user_idx').distinct()
+    available_items = test.toPandas()["item_idx"].values
+    user_item_pairs = pd.DataFrame({
+        'user_idx': np.repeat(1, len(available_items)),
+        'item_idx': available_items
+    })
+    inp = torch.from_numpy(user_item_pairs.to_numpy()).float().cpu()
 
-    for name in tqdm.tqdm(algorithms.keys(), desc='Model'):
-        model = algorithms[name]
+    # from replay.models.cql import CQL
+    # model = CQL(
+    #     use_gpu=use_gpu, top_k=K, n_epochs=1,
+    #     action_randomization_scale=args.action_randomization_scale,
+    #     batch_size=2048
+    # )
+    # model.fit(log=train)
+    # torch.save(model.model._impl, './model.pt')
+    # save_policy(model.model._impl, './policy.pt', batch_size=10) #len(available_items))
 
-        logger.info(msg='{} started'.format(name))
-
-        train_ = train
-        fit_predict_add_res(name, model, experiment, train=train_, top_k=K, test_users=test_users)
+    # model = torch.load('./model.pt')
+    # print(model.predict_best_action(inp))
+    model = torch.jit.load('./policy.pt', map_location=torch.device('cpu'))
+    t = min(inp.size(dim=0), 10)
+    print('size=', inp.size(dim=0), 't=', t)
+    with torch.no_grad():
         print(
-            experiment.results[[
-                f'NDCG@{K}', f'MRR@{K}', f'Coverage@{K}', 'fit_time'
-            ]].sort_values(f'NDCG@{K}', ascending=False)
+            model.forward(inp[:, :]).numpy()
         )
 
-        results_md = experiment.results.sort_values(f'NDCG@{K}', ascending=False).to_markdown()
-        with open(f'{ds}.md', 'w') as text_file:
-            text_file.write(results_md)
+    def grouped_map(log_slice: pd.DataFrame) -> pd.DataFrame:
+        return _rate_user_items(
+            model=None,
+            user_idx=log_slice["user_idx"][0],
+            items=available_items,
+        )[["user_idx", "item_idx", "relevance"]]
+
+    res = test.groupby("user_idx").applyInPandas(grouped_map, REC_SCHEMA)
+    res = res.cache()
+    res.count()
+
+    # pred = model.predict(log=train, k=K, users=test_users)
+    # pred.cache()
+    # pred.count()
+
+    print(res.show(10))
+    print('Experiment: OK')
+
+
+def _rate_user_items(
+    model,
+    user_idx: int,
+    items: np.ndarray,
+) -> pd.DataFrame:
+    user_item_pairs = pd.DataFrame({
+        'user_idx': np.repeat(user_idx, len(items)),
+        'item_idx': items
+    })
+    print('===>')
+    # # with io.BytesIO(model) as buffer:
+    # #     model = torch.load(buffer, map_location=torch.device('cpu'))
+    #
+    if model is None:
+        model = torch.jit.load('./policy.pt', map_location=torch.device('cpu'))
+
+    # res = model.predict_best_action(user_item_pairs.to_numpy())
+    res = model.forward(torch.from_numpy(user_item_pairs.to_numpy()).float().cpu())
+
+    # res = model.forward(inp).numpy()
+    # print(type(res))
+    # print(res)
+    # print(
+    #     model.forward(
+    #         torch.from_numpy(
+    #             user_item_pairs.to_numpy()[:2]
+    #         ).float()
+    #     ).detach().cpu().numpy()
+    # )
+    # t = min(inp.size(dim=0), 10)
+    # print('size=', inp.size(dim=0), 't=', t)
+    # with torch.no_grad():
+    #     print(
+    #         model.forward(inp[:, :]).numpy()
+    #     )
+    # res = np.repeat(1., len(items))
+
+    # it doesn't explicitly filter seen items and doesn't return top k items
+    # instead, it keeps all predictions as is to be filtered further by base methods
+
+    user_item_pairs['relevance'] = res
+    print('<===')
+    return user_item_pairs
+
+
+
+@eval_api
+def save_policy(model, fname: str, batch_size) -> None:
+    dummy_x = torch.rand(batch_size, *model.observation_shape, device=model._device)
+
+    # workaround until version 1.6
+    freeze(model)
+
+    # dummy function to select best actions
+    def _func(x: torch.Tensor) -> torch.Tensor:
+        if model._scaler:
+            x = model._scaler.transform(x)
+
+        action = model._predict_best_action(x)
+
+        if model._action_scaler:
+            action = model._action_scaler.reverse_transform(action)
+
+        return action
+
+    traced_script = torch.jit.trace(_func, dummy_x, check_trace=False)
+    traced_script.save(fname)
+
+    # workaround until version 1.6
+    unfreeze(model)
 
 
 if __name__ == '__main__':
