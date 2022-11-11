@@ -51,9 +51,11 @@ RUN mamba init zsh; \
     # auto activate env on login
     echo "mamba activate recsys" >> /root/.zshrc; \
 #     mamba install pytorch -c pytorch -y; \
-    mamba install requests pypandoc optuna tabulate ruamel.yaml -y; \
+    mamba install requests pypandoc optuna tabulate -y; \
     pip install --no-cache-dir datatable; \
     poetry --no-interaction --no-cache install; \
+    # install non-replay dev dependencies
+    mamba install ruamel.yaml -y; \
     pip install --no-cache-dir -U d3rlpy rs_datasets pytorch_ranger wandb; \
     mamba clean -a -y; \
     pip cache purge;
