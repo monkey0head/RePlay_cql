@@ -14,6 +14,7 @@ RUN apt-get update; \
         # for: javasdk
         apt-transport-https \
     ; \
+    # regular clean-up
     rm -rf /var/lib/apt/lists/*;
 
 # Install Java 11 (or 8) SDK
@@ -42,12 +43,13 @@ WORKDIR /replay
 SHELL ["/bin/bash", "-c"]
 
 # Prepare conda env
-RUN mamba init; \
+RUN \
+    # mandatory to do init + sourcing as each RUN is a new shell session
+    mamba init; \
     source /root/.bashrc; \
+    # not necessary, just make using base env explicit
     mamba activate base; \
-    mamba install python=3.9 pip wheel poetry cython -y; \
-#     mamba install pytorch -c pytorch -y; \
-    mamba install requests pypandoc optuna tabulate -y; \
+    mamba install python=3.9 pip wheel poetry cython requests pypandoc optuna tabulate -y; \
     pip install --no-cache-dir datatable; \
     # prevent poetry to create a separate virtualenv
     poetry config virtualenvs.create false; \
@@ -55,5 +57,6 @@ RUN mamba init; \
     # install non-replay dev dependencies
     mamba install ruamel.yaml -y; \
     pip install --no-cache-dir -U d3rlpy rs_datasets pytorch_ranger wandb; \
+    # clean-up
     mamba clean -a -y; \
     pip cache purge;
