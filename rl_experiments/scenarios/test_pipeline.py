@@ -3,6 +3,8 @@ from __future__ import annotations
 import time
 from typing import TYPE_CHECKING
 
+import torch.cuda
+
 from rl_experiments.run.runner import Runner
 from rl_experiments.utils.config import TConfig
 from rl_experiments.utils.rating_dataset import RatingDataset
@@ -19,19 +21,22 @@ class TestPipelineExperiment(Runner):
     seed: int
 
     k: int
+    epochs: int
     dataset: RatingDataset
 
     def __init__(
             self, config: TConfig, seed: int,
-            k: int, dataset: TConfig,
+            k: int, epochs: int, dataset: TConfig,
             **_
     ):
         super().__init__(config, **config)
         self.init_time = time.time()
         self.print_with_timestamp('==> Init')
+        print(f'CUDA available: {torch.cuda.is_available()}')
 
         self.seed = seed
         self.k = k
+        self.epochs = epochs
         self.dataset = RatingDataset(k=k, **dataset)
 
     def run(self):
@@ -59,7 +64,7 @@ class TestPipelineExperiment(Runner):
         sdac.fit(
             train_dataset,
             eval_episodes=train_dataset,
-            n_epochs=100,
+            n_epochs=self.epochs,
             scorers={'environment': evaluate_scorer}
         )
 

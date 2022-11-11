@@ -9,6 +9,7 @@ seed: 42
 debug: False
 
 k: 10
+epochs: 100
 dataset:
   name: MovieLens.100k
   test_ratio: 0.3
