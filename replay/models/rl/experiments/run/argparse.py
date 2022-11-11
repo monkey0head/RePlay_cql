@@ -3,7 +3,7 @@ from __future__ import annotations
 from ast import literal_eval
 from typing import Any
 
-from rl_experiments.utils.config import TKeyPathValue
+from replay.models.rl.experiments.utils.config import TKeyPathValue
 
 
 def parse_arg(arg: str | tuple[str, Any]) -> TKeyPathValue:

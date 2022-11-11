@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from rl_experiments.utils.config import TConfig
+from replay.models.rl.experiments.utils.config import TConfig
 
 if TYPE_CHECKING:
     from wandb.sdk.wandb_run import Run

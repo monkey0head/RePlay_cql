@@ -5,9 +5,9 @@ from typing import TYPE_CHECKING
 
 import torch.cuda
 
-from rl_experiments.run.runner import Runner
-from rl_experiments.utils.config import TConfig
-from rl_experiments.utils.rating_dataset import RatingDataset
+from replay.models.rl.experiments.run.runner import Runner
+from replay.models.rl.experiments.utils.config import TConfig
+from replay.models.rl.experiments.utils.rating_dataset import RatingDataset
 
 if TYPE_CHECKING:
     from wandb.sdk.wandb_run import Run
@@ -47,8 +47,8 @@ class TestPipelineExperiment(Runner):
         ) = self.dataset.prepare()
 
         from replay.models.rl.sdac.sdac import SDAC
-        from rl_experiments.utils.encoders import CustomEncoderFactory
-        from rl_experiments.utils.fake_recommender_env import FakeRecomenderEnv
+        from replay.models.rl.experiments.utils.encoders import CustomEncoderFactory
+        from replay.models.rl.experiments.utils.fake_recommender_env import FakeRecomenderEnv
         from d3rlpy.metrics import evaluate_on_environment
 
         sdac = SDAC(

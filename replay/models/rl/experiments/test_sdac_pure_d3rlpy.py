@@ -6,8 +6,8 @@ from pyspark.sql import DataFrame
 from rs_datasets import MovieLens
 
 from replay.models.rl.sdac.sdac import SDAC
-from rl_experiments.utils.encoders import CustomEncoderFactory
-from rl_experiments.utils.fake_recommender_env import FakeRecomenderEnv
+from replay.models.rl.experiments.utils.encoders import CustomEncoderFactory
+from replay.models.rl.experiments.utils.fake_recommender_env import FakeRecomenderEnv
 
 wandb.init(project="RecommendationsSDAC", group = "MovieLens_SDAC")
 

@@ -5,11 +5,11 @@ from typing import Type
 
 from ruamel import yaml
 
-from rl_experiments.run.argparse import parse_arg
-from rl_experiments.utils.config import (
+from replay.models.rl.experiments.run.argparse import parse_arg
+from replay.models.rl.experiments.utils.config import (
     extracted_type, TConfig, override_config
 )
-from rl_experiments.run.runner import Runner
+from replay.models.rl.experiments.run.runner import Runner
 
 TExperimentRunnerRegistry = dict[str, Type[Runner]]
 
@@ -31,7 +31,7 @@ def run_experiment(
     set_single_threaded_math()
 
     if args.wandb_sweep:
-        from rl_experiments.run.sweep import Sweep
+        from replay.models.rl.experiments.run.sweep import Sweep
         Sweep(
             sweep_id=args.wandb_sweep_id,
             config=config,

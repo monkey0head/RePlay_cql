@@ -8,7 +8,7 @@ import pandas as pd
 import wandb
 from gym.spaces import Box
 
-from rl_experiments.utils.metrics import ndcg, mape
+from replay.models.rl.experiments.utils.metrics import ndcg, mape
 
 if TYPE_CHECKING:
     from wandb.sdk.wandb_run import Run

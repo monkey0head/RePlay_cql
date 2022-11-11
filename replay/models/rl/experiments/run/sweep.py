@@ -6,9 +6,9 @@ from multiprocessing import Process
 import wandb
 from matplotlib import pyplot as plt
 
-from rl_experiments.utils.config import extracted, override_config, TKeyPathValue
-from rl_experiments.run.argparse import parse_arg
-from rl_experiments.run.entrypoint import (
+from replay.models.rl.experiments.utils.config import extracted, override_config, TKeyPathValue
+from replay.models.rl.experiments.run.argparse import parse_arg
+from replay.models.rl.experiments.run.entrypoint import (
     TExperimentRunnerRegistry, resolve_experiment_runner, read_config
 )
 
