@@ -17,12 +17,10 @@ from pyspark.sql import functions as sf, SparkSession, DataFrame
 from replay.data_preparator import DataPreparator, Indexer
 from replay.experiment import Experiment
 from replay.metrics import HitRate, NDCG, MAP, MRR, Coverage, Surprisal
-from replay.models import Recommender
+from replay.models.base_rec import Recommender
 from replay.session_handler import State, get_spark_session
 from replay.splitters import DateSplitter
 from replay.utils import get_log_info
-import wandb
-wandb.init(project="ReplayRecommendations", group = "MovieLens")
 
 
 class RatingsDataset:
@@ -190,8 +188,9 @@ class BareRatingsRunner:
             k: Union[int, list[int]], test_ratio: float,
             action_randomization_scale: float, use_negative_events: bool,
             rating_based_reward: bool, reward_top_k: bool, rating_actions: bool,
-            seed: int = None
+            seed: int = None, log: bool
     ):
+        self.log = log
         self.logger = logging.getLogger("replay")
         self.label = label
 
@@ -203,6 +202,10 @@ class BareRatingsRunner:
         self.dataset = RatingsDataset(dataset_name, core=core, test_ratio=test_ratio)
         self.logger.info(msg='train info:\n\t' + get_log_info(self.dataset.binary_train))
         self.logger.info(msg='test info:\n\t' + get_log_info(self.dataset.test))
+
+        if self.log:
+            import wandb
+            wandb.init(project="ReplayRecommendations", group=self.dataset.name)
 
         self.results_label = f'{self.label}.{self.dataset.fullname}.md'
         self.logger.info(msg=f'Results are saved to \n\t{self.results_label}')
@@ -228,7 +231,7 @@ class BareRatingsRunner:
         self.logger.info(msg=f'{text}: \t{time.time() - self.init_time:.3f}')
 
     def run(self):
-        from replay.models import TorchRecommender
+        from replay.models.base_torch_rec import TorchRecommender
         from replay.models.rl.rl_recommender import RLRecommender
 
         for model_name in tqdm.tqdm(self.models.keys(), desc='Model'):
@@ -297,8 +300,8 @@ class BareRatingsRunner:
         })
 
     def build_models(self, algorithms: list[str], test_log: DataFrame = None) -> dict[str, tuple[Recommender, DataFrame]]:
+        n_epochs = self.epochs[-1] if self.epochs else 0
         def build_rl_recommender(ctor, test_log):
-            n_epochs = self.epochs[-1] if self.epochs else 0
             return ctor(
                 top_k=self.k, use_gpu=self.gpu, n_epochs=n_epochs,
                 action_randomization_scale=self.action_randomization_scale,
@@ -359,6 +362,18 @@ class BareRatingsRunner:
                     MostPopularRec(add_cold=False),
                     self.dataset.pos_binary_train
                 )
+            elif alg == 'multvae':
+                from replay.models.mult_vae import MultVAE
+                models['MultVAE'] = (
+                    MultVAE(epochs=n_epochs),
+                    self.dataset.pos_binary_train
+                )
+            elif alg == 'neuromf':
+                from replay.models.neuromf import NeuroMF
+                models['NeuroMF'] = (
+                    NeuroMF(epochs=n_epochs),
+                    self.dataset.pos_binary_train
+                )
 
         return models
 
@@ -410,6 +425,8 @@ def parse_args():
     parser.add_argument('--rat_act', dest='rating_actions', action='store_true', default=False)
     parser.add_argument('--top', dest='reward_top_k', action='store_true', default=False)
 
+    parser.add_argument('--log', dest='log', action='store_true', default=False)
+
     return parser.parse_args()
 
 
@@ -419,6 +436,7 @@ def main():
     warnings.filterwarnings("ignore", category=UserWarning, append=True)
     warnings.filterwarnings("ignore", category=ExperimentalWarning, append=True)
     warnings.filterwarnings("ignore", category=DeprecationWarning, append=True)
+    os.environ['OMP_NUM_THREADS'] = '1'
 
     args = parse_args()
     runner = BareRatingsRunner(

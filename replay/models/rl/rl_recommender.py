@@ -8,7 +8,7 @@ from d3rlpy.metrics import evaluate_on_environment
 from pyspark.sql import DataFrame, functions as sf
 
 from replay.data_preparator import DataPreparator
-from replay.models import Recommender
+from replay.models.base_rec import Recommender
 from replay.models.rl.fake_recommender_env import FakeRecomenderEnv
 
 
