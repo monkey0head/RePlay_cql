@@ -8,6 +8,7 @@ from math import floor
 from typing import Union
 
 import numpy as np
+import pandas as pd
 import psutil
 import torch
 import tqdm
@@ -56,10 +57,12 @@ class RatingsDataset:
     def _read_dataset(name: str, category: str):
         if name == 'MovieLens':
             from rs_datasets import MovieLens
-            ds = MovieLens(version=category)
+            ds = MovieLens(version=category).ratings
         elif name == 'Amazon':
             from rs_datasets import Amazon
-            ds = Amazon(category=category)
+            ds = Amazon(category=category).ratings
+        elif name == 'sberzvuk':
+            ds = pd.read_csv('~/data/sberzvuk/cache/ratings_1ku.csv')
         else:
             raise KeyError()
 
@@ -72,7 +75,7 @@ class RatingsDataset:
 
         return (
             DataPreparator()
-            .transform(columns_mapping=col_mapping, data=ds.ratings)
+            .transform(columns_mapping=col_mapping, data=ds)
             # rename ids to `idx` for simplicity
             .withColumnRenamed('user_id', 'user_idx')
             .withColumnRenamed('item_id', 'item_idx')
@@ -299,8 +302,11 @@ class BareRatingsRunner:
             MRR(): self.k
         })
 
-    def build_models(self, algorithms: list[str], test_log: DataFrame = None) -> dict[str, tuple[Recommender, DataFrame]]:
+    def build_models(
+            self, algorithms: list[str], test_log: DataFrame = None
+    ) -> dict[str, tuple[Recommender, DataFrame]]:
         n_epochs = self.epochs[-1] if self.epochs else 0
+
         def build_rl_recommender(ctor, test_log):
             return ctor(
                 top_k=self.k, use_gpu=self.gpu, n_epochs=n_epochs,
@@ -334,27 +340,27 @@ class BareRatingsRunner:
                     self.dataset.pos_binary_train
                 )
             elif alg == 'als':
-                from replay.models import ALSWrap
+                from replay.models.als import ALSWrap
                 models['ALS'] = ALSWrap(seed=self.seed), self.dataset.pos_binary_train
             elif alg == 'knn':
-                from replay.models import ItemKNN
+                from replay.models.knn import ItemKNN
                 models['KNN'] = ItemKNN(num_neighbours=self.k), self.dataset.pos_binary_train
             elif alg == 'lightfm':
-                from replay.models import LightFMWrap
+                from replay.models.lightfm_wrap import LightFMWrap
                 models['LightFM'] = (
                     LightFMWrap(random_state=self.seed),
                     self.dataset.pos_binary_train
                 )
             elif alg == 'ucb':
-                from replay.models import UCB
+                from replay.models.ucb import UCB
                 models['UCB'] = UCB(exploration_coef=0.5), self.dataset.binary_train
             elif alg == 'slim':
-                from replay.models import SLIM
+                from replay.models.slim import SLIM
                 models['SLIM'] = SLIM(seed=self.seed), self.dataset.pos_binary_train
             elif alg == 'rand':
-                from replay.models import RandomRec
+                from replay.models.random_rec import RandomRec
                 models['Rand'] = (
-                    RandomRec(seed=self.seed, add_cold=False), self.dataset.pos_binary_train
+                    RandomRec(seed=self.seed), self.dataset.pos_binary_train
                 )
             elif alg == 'popular':
                 from replay.models.most_popular import MostPopularRec
