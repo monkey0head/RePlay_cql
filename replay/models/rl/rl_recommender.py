@@ -94,9 +94,9 @@ class RLRecommender(Recommender):
         if self.test_log:
             _, val_df = self._prepare_data(self.test_log, True)
            # raise Exception (len(self.test_log))
-        indx = list(range(0,len(val_df)))
+        indx = np.arange(len(val_df))
         np.random.shuffle(indx)
-        env = FakeRecomenderEnv(val_df[indx[:10000]], self.k)
+        env = FakeRecomenderEnv(val_df.iloc[indx[:10000]], self.k)
         evaluate_scorer = evaluate_on_environment(env)
 
         if self.fitter is None:
