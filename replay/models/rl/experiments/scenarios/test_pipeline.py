@@ -20,13 +20,13 @@ class TestPipelineExperiment(Runner):
     init_time: float
     seed: int
 
-    k: int
+    top_k: int
     epochs: int
     dataset: RatingDataset
 
     def __init__(
             self, config: TConfig, seed: int,
-            k: int, epochs: int, dataset: TConfig,
+            top_k: int, epochs: int, dataset: TConfig,
             **_
     ):
         super().__init__(config, **config)
@@ -35,9 +35,9 @@ class TestPipelineExperiment(Runner):
         print(f'CUDA available: {torch.cuda.is_available()}')
 
         self.seed = seed
-        self.k = k
+        self.top_k = top_k
         self.epochs = epochs
-        self.dataset = RatingDataset(k=k, **dataset)
+        self.dataset = RatingDataset(k=top_k, **dataset)
 
     def run(self):
         self.print_with_timestamp('==> Run')
@@ -58,7 +58,7 @@ class TestPipelineExperiment(Runner):
             encoder_factory=CustomEncoderFactory(64)
         )
         env = FakeRecomenderEnv(
-            logger=self.logger, test_data=users_logs_test[:10000], top_k=self.k
+            logger=self.logger, test_data=users_logs_test[:10000], top_k=self.top_k
         )
         evaluate_scorer = evaluate_on_environment(env)
         sdac.fit(

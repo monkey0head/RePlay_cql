@@ -8,11 +8,11 @@ log: True
 seed: 42
 debug: False
 
-k: 10
+top_k: 10
 epochs: 100
 dataset:
   name: MovieLens.100k
-  test_ratio: 0.3
+  test_ratio: 0.2
   use_negative_events: True
   rating_based_reward: False
   reward_top_k: True
