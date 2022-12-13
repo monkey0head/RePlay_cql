@@ -8,7 +8,7 @@ import pandas as pd
 import wandb
 from gym.spaces import Box
 
-from replay.models.rl.experiments.utils.metrics import ndcg, mape
+from replay.models.rl.experiments.utils.metrics import ndcg, mean_average_precision
 
 if TYPE_CHECKING:
     from wandb.sdk.wandb_run import Run
@@ -55,7 +55,7 @@ class FakeRecomenderEnv(gym.Env):
                                     'relevance': self.relevance_hist})
             pred_top_k = pred_df.sort_values(['relevance'])[::-1][:self.top_k]
             ndcg_ = ndcg(self.top_k, pred_top_k['item_hist'].values, self.original['item_id'].values)
-            mape_ = mape(self.top_k, pred_top_k['item_hist'].values, self.original['item_id'].values)
+            mape_ = mean_average_precision(self.top_k, pred_top_k['item_hist'].values, self.original['item_id'].values)
             if self.logger:
                 self.logger.log({"episode": self.total_episodes, "NDCG": ndcg_, "MAP": mape_})
             self.total_ndsg.append(ndcg_)
