@@ -49,7 +49,7 @@ RUN \
     source /root/.bashrc; \
     # not necessary, just make using base env explicit
     mamba activate base; \
-    mamba install python=3.9 pip wheel poetry cython requests pypandoc optuna tabulate -y; \
+    mamba install python=3.9 pip wheel poetry=1.1 cython requests pypandoc optuna tabulate -y; \
     pip install --no-cache-dir datatable; \
     # prevent poetry to create a separate virtualenv
     poetry config virtualenvs.create false; \
