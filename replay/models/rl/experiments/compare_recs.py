@@ -12,7 +12,6 @@ import pandas as pd
 import psutil
 import torch
 import tqdm
-import wandb
 from optuna.exceptions import ExperimentalWarning
 from pyspark.sql import functions as sf, SparkSession, DataFrame
 
@@ -23,7 +22,9 @@ from replay.models.base_rec import Recommender
 from replay.session_handler import State, get_spark_session
 from replay.splitters import DateSplitter
 from replay.utils import get_log_info
+import wandb
 
+wandb.init(project="SDAC REPLAY", group="ML")
 
 class RatingsDataset:
     name: str
@@ -444,9 +445,6 @@ def main():
     warnings.filterwarnings("ignore", category=ExperimentalWarning, append=True)
     warnings.filterwarnings("ignore", category=DeprecationWarning, append=True)
     os.environ['OMP_NUM_THREADS'] = '1'
-
-    # wandb.login(key=os.environ['WANDB_API_KEY'])
-    # wandb.init(project='replay', entity='replay')
 
     args = parse_args()
     runner = BareRatingsRunner(
