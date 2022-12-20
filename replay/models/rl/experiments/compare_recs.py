@@ -12,6 +12,7 @@ import pandas as pd
 import psutil
 import torch
 import tqdm
+import wandb
 from optuna.exceptions import ExperimentalWarning
 from pyspark.sql import functions as sf, SparkSession, DataFrame
 
@@ -443,6 +444,8 @@ def main():
     warnings.filterwarnings("ignore", category=ExperimentalWarning, append=True)
     warnings.filterwarnings("ignore", category=DeprecationWarning, append=True)
     os.environ['OMP_NUM_THREADS'] = '1'
+
+    wandb.init(project='replay', entity='replay')
 
     args = parse_args()
     runner = BareRatingsRunner(
