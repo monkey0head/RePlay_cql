@@ -94,15 +94,17 @@ class RLRecommender(Recommender):
         if self.test_log:
             _, val_df = self._prepare_data(self.test_log, True)
            # raise Exception (len(self.test_log))
-        indx = np.arange(len(val_df))
-        np.random.shuffle(indx)
-        env = FakeRecomenderEnv(val_df.iloc[indx[:10000]], self.k)
-        evaluate_scorer = evaluate_on_environment(env)
+            indx = np.arange(len(val_df))
+            np.random.shuffle(indx)
+            env = FakeRecomenderEnv(val_df.iloc[indx[:10000]], self.k)
+            # evaluate_scorer = evaluate_on_environment(env)
 
         if self.fitter is None:
             self.fitter = self.model.fitter(
-                self.train, n_epochs=self.n_epochs, eval_episodes=self.train,
-                scorers={'environment': evaluate_scorer}
+                self.train,
+                n_epochs=self.n_epochs,
+                # eval_episodes=self.train,
+                # scorers={'environment': evaluate_scorer}
             )
 
         try:
