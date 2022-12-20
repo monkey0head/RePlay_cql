@@ -2,7 +2,7 @@ import math
 import gym
 import numpy as np
 from gym.spaces import Discrete, Box, Tuple
-import wandb
+# import wandb
 import pandas as pd
 
 
@@ -73,14 +73,14 @@ class FakeRecomenderEnv(gym.Env):
             mape_ = mape( self.top_k, pred_top_k['item_hist'].values, self.original['item_idx'].values)
             
             # print(pred_top_k['item_hist'].values, self.original['item_idx'].values, ndcg_)
-            wandb.log({"episode": self.total_episodes, "NDCG": ndcg_, "MAP": mape_})
+            # wandb.log({"episode": self.total_episodes, "NDCG": ndcg_, "MAP": mape_})
             self.total_ndsg.append(ndcg_)
             self.total_mape.append(mape_)
             ob = []            
             
             if self.episode_num >= len(self.episodes)-1:
               done = True
-              wandb.log({"run": self.run, "total_NDCG": np.mean(np.asarray(self.total_ndsg)), "total_MAP": np.mean(np.asarray(self.total_mape))})
+              # wandb.log({"run": self.run, "total_NDCG": np.mean(np.asarray(self.total_ndsg)), "total_MAP": np.mean(np.asarray(self.total_mape))})
               self.total_ndsg = []
               self.total_mape = []
               self.run += 1

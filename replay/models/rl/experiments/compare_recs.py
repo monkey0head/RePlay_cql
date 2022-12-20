@@ -445,8 +445,8 @@ def main():
     warnings.filterwarnings("ignore", category=DeprecationWarning, append=True)
     os.environ['OMP_NUM_THREADS'] = '1'
 
-    wandb.login(key=os.environ['WANDB_API_KEY'])
-    wandb.init(project='replay', entity='replay')
+    # wandb.login(key=os.environ['WANDB_API_KEY'])
+    # wandb.init(project='replay', entity='replay')
 
     args = parse_args()
     runner = BareRatingsRunner(
