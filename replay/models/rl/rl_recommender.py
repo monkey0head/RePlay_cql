@@ -11,6 +11,16 @@ from replay.data_preparator import DataPreparator
 from replay.models.base_rec import Recommender
 from replay.models.rl.fake_recommender_env import FakeRecomenderEnv
 
+def random_embeddings(df, emb_size):
+    mapping = dict()
+    inv_mapping = dict()
+    users = list(set(df))
+    for user in users:
+        new_vector = np.random.uniform(0, 1, size=emb_size)
+        #new_vector = np.ones(emb_size)
+        mapping[user] = new_vector
+        inv_mapping[tuple(new_vector)] = user
+    return mapping, inv_mapping
 
 class RLRecommender(Recommender):
     top_k: int
@@ -45,7 +55,10 @@ class RLRecommender(Recommender):
         self.rating_based_reward = rating_based_reward
         self.rating_actions = rating_actions
         self.reward_top_k = reward_top_k
-
+        self.mapping_items = None
+        self.mapping_users = None
+        self.inv_mapp_items = None
+        self.inv_mapp_users = None
         self.train = None
         self.fitter = None
         self.test_log = test_log
@@ -66,7 +79,9 @@ class RLRecommender(Recommender):
 
         users = users.toPandas().to_numpy().flatten()
         items = items.toPandas().to_numpy().flatten()
-
+        
+        users = [self.mapping_users[user] for user in users]
+        items = [self.mapping_items[item] for item in items]
         # TODO: rewrite to applyInPandas with predictUserPairs parallel batch execution
         user_predictions = []
         for user in users:
@@ -134,7 +149,12 @@ class RLRecommender(Recommender):
 
         # TODO: consider making calculations in Spark before converting to pandas
         user_logs = log.toPandas().sort_values(['user_idx', 'timestamp'], ascending=True)
-
+        
+        self.mapping_items, self.inv_mapp_items = random_embeddings(user_logs['item_idx'], emb_size = 8)
+        self.mapping_users, self.inv_mapp_users = random_embeddings(user_logs['user_idx'], emb_size = 8)
+        
+        user_logs['item_emb'] = user_logs['item_idx'].apply(lambda x: self.mapping_items[x])
+        user_logs['user_emb'] = user_logs['user_idx'].apply(lambda x: self.mapping_users[x])
         if self.rating_based_reward:
             rescale = self.raw_rating_to_reward_rescale
         else:
@@ -146,7 +166,7 @@ class RLRecommender(Recommender):
             user_top_k_idxs = (
                 user_logs
                 .sort_values(['relevance', 'timestamp'], ascending=[False, True])
-                .groupby('user_idx')
+                .groupby('user_emb')
                 .head(self.k)
                 .index
             )
@@ -157,7 +177,7 @@ class RLRecommender(Recommender):
         # every user has his own episode (the latest item is defined as terminal)
         user_terminal_idxs = (
             user_logs[::-1]
-            .groupby('user_idx')
+            .groupby('user_emb')
             .head(1)
             .index
         )
@@ -176,7 +196,7 @@ class RLRecommender(Recommender):
             actions += action_randomization
 
         train_dataset = MDPDataset(
-            observations=np.array(user_logs[['user_idx', 'item_idx']]),
+            observations=np.array(user_logs[['user_emb', 'item_emb']]),
             actions=actions[:, None],
             rewards=rewards,
             terminals=terminals
