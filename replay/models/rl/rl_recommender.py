@@ -105,7 +105,7 @@ class RLRecommender(Recommender):
                 'user_idx': np.repeat(user, len(items)),
                 'item_idx': items
             })
-            observation =  self._idx2obs(user_item_pairs.to_numpy()):
+            observation =  self._idx2obs(user_item_pairs.to_numpy())
             user_item_pairs['relevance'] = self.model.predict(observation)
             user_predictions.append(user_item_pairs)
 
