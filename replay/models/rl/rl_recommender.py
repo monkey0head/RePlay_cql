@@ -146,8 +146,8 @@ class RLRecommender(Recommender):
        # observations = np.array(user_logs[['user_idx', 'item_idx']])
         observations = []
         for obs in item_user_array:
-            user_emb = self.mapping_users(obs[0])
-            item_emb = self.mapping_items(obs[1])
+            user_emb = self.mapping_users[obs[0]]
+            item_emb = self.mapping_items[obs[1]]
             
             new_obs = list(user_emb) + list(item_emb)
             observations.append(new_obs)
