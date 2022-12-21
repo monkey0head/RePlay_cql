@@ -324,8 +324,8 @@ class BareRatingsRunner:
         models = {}
         for alg in algorithms:
             if alg == 'cql':
-                from replay.models.rl.cql_recommender import CQLRecommender
-                models['CQL'] = build_rl_recommender(CQLRecommender, self.dataset.raw_test), self.dataset.raw_train
+                from replay.models.rl.dcql_recommender import DCQLRecommender
+                models['CQL'] = build_rl_recommender(DCQLRecommender, self.dataset.raw_test), self.dataset.raw_train
             elif alg == 'sdac':
                 from replay.models.rl.sdac.sdac_recommender import SDACRecommender
                 models['SDAC'] = build_rl_recommender(SDACRecommender, self.dataset.raw_test), self.dataset.raw_train
