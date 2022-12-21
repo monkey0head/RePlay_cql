@@ -194,9 +194,10 @@ class RLRecommender(Recommender):
             action_randomization = np.random.randn(len(user_logs)) * action_randomization_scale
             actions = actions.astype(np.float64)
             actions += action_randomization
-
+        
+        observations = np.asarray(user_logs[['user_emb', 'item_emb']])
         train_dataset = MDPDataset(
-            observations=np.array(user_logs[['user_emb', 'item_emb']]),
+            observations=observations,
             actions=actions[:, None],
             rewards=rewards,
             terminals=terminals
