@@ -117,7 +117,7 @@ class RLRecommender(Recommender):
                 'user_idx': np.repeat(user, len(items)),
                 'item_idx': items
             })
-            observation =  self._idx2obs(user_item_pairs.to_numpy(), show_logs = True)
+            observation =  self._idx2obs(user_item_pairs.to_numpy(), show_logs = False)
             user_item_pairs['relevance'] = self.model.predict(observation)
             user_predictions.append(user_item_pairs)
 
@@ -146,8 +146,9 @@ class RLRecommender(Recommender):
         if self.fitter is None:
             self.fitter = self.model.fitter(
                 self.train,
-                n_epochs=self.n_epochs,
-                steps_per_epoch = 2000,
+               # n_epochs=self.n_epochs,
+                n_steps: int = 2000*self.n_epochs,
+                n_steps_per_epoch: int = 2000,
                 # eval_episodes=self.train,
                 # scorers={'environment': evaluate_scorer}
             )
