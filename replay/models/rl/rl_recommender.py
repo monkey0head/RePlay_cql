@@ -195,8 +195,8 @@ class RLRecommender(Recommender):
             actions = actions.astype(np.float64)
             actions += action_randomization
             
-        user_logs['item_emb'] = user_logs['item_emb'].apply(lambda x: np.asarray(x))
-        user_logs['user_emb'] = user_logs['user_emb'].apply(lambda x: np.asarray(x))
+        user_logs['item_emb'] = user_logs['item_emb'].apply(lambda x: np.asarray(list(x)))
+        user_logs['user_emb'] = user_logs['user_emb'].apply(lambda x: np.asarray(list(x)))
         observations = np.asarray(user_logs[['user_emb', 'item_emb']])
         print(observations[:2])
         print("-------------------------------------")
