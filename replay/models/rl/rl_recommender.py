@@ -147,8 +147,8 @@ class RLRecommender(Recommender):
             self.fitter = self.model.fitter(
                 self.train,
                # n_epochs=self.n_epochs,
-                n_steps: int = 2000*self.n_epochs,
-                n_steps_per_epoch: int = 2000,
+                n_steps = 2000*self.n_epochs,
+                n_steps_per_epoch = 2000,
                 # eval_episodes=self.train,
                 # scorers={'environment': evaluate_scorer}
             )
