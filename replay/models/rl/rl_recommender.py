@@ -141,6 +141,18 @@ class RLRecommender(Recommender):
         4.0: 1.0,
         5.0: 1.0,
     }
+    
+    def _idx2obs(self, item_user_array):
+       # observations = np.array(user_logs[['user_idx', 'item_idx']])
+        observations = []
+        for obs in item_user_array:
+            user_emb = self.mapping_users(obs[0])
+            item_emb = self.mapping_items(obs[1])
+            
+            new_obs = list(user_emb) + list(item_emb)
+            observations.append(new_obs)
+        return np.asarray(observations)
+
 
     def _prepare_data(self, log: DataFrame, return_pd_df = False) -> MDPDataset:
         if not self.use_negative_events:
@@ -153,8 +165,6 @@ class RLRecommender(Recommender):
         self.mapping_items, self.inv_mapp_items = random_embeddings(user_logs['item_idx'], emb_size = 8)
         self.mapping_users, self.inv_mapp_users = random_embeddings(user_logs['user_idx'], emb_size = 8)
         
-        user_logs['item_emb'] = user_logs['item_idx'].apply(lambda x: self.mapping_items[x])
-        user_logs['user_emb'] = user_logs['user_idx'].apply(lambda x: self.mapping_users[x])
         if self.rating_based_reward:
             rescale = self.raw_rating_to_reward_rescale
         else:
@@ -166,7 +176,7 @@ class RLRecommender(Recommender):
             user_top_k_idxs = (
                 user_logs
                 .sort_values(['relevance', 'timestamp'], ascending=[False, True])
-                .groupby('user_emb')
+                .groupby('user_idx')
                 .head(self.k)
                 .index
             )
@@ -177,7 +187,7 @@ class RLRecommender(Recommender):
         # every user has his own episode (the latest item is defined as terminal)
         user_terminal_idxs = (
             user_logs[::-1]
-            .groupby('user_emb')
+            .groupby('user_idx')
             .head(1)
             .index
         )
@@ -195,12 +205,10 @@ class RLRecommender(Recommender):
             actions = actions.astype(np.float64)
             actions += action_randomization
             
-        user_logs['item_emb'] = user_logs['item_emb'].apply(lambda x: np.asarray(list(x)))
-        user_logs['user_emb'] = user_logs['user_emb'].apply(lambda x: np.asarray(list(x)))
-        observations = np.asarray(user_logs[['user_emb', 'item_emb']])
-        print(np.asarray(observations[:2]))
-        print("-------------------------------------")
-        print(observations.shape)
+        observations = self._idx2obs(np.array(user_logs[['user_idx', 'item_idx']]))
+       # print(np.asarray(observations[:2]))
+       # print("-------------------------------------")
+       # print(observations.shape)
         train_dataset = MDPDataset(
             observations=observations,
             actions=actions[:, None],
