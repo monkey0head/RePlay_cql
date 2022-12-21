@@ -64,13 +64,17 @@ class RLRecommender(Recommender):
         self.fitter = None
         self.test_log = test_log
         
-    def _idx2obs(self, item_user_array):
+    def _idx2obs(self, item_user_array, show_logs = True):
        # observations = np.array(user_logs[['user_idx', 'item_idx']])
         observations = []
         print("Prepare embedings...")
         out_of_emb_users = 0
         out_of_emb_items = 0
-        for obs in tqdm(item_user_array):
+        if show_logs:
+            gen = tqdm(item_user_array)
+        else:
+            gen = item_user_array
+        for obs in gen:
             if obs[0] in list(self.mapping_users.keys()):
                 user_emb = self.mapping_users[obs[0]]
             else:
@@ -85,7 +89,8 @@ class RLRecommender(Recommender):
             
             new_obs = list(user_emb) + list(item_emb)
             observations.append(new_obs)
-        print(f"Out of embeddings users {out_of_emb_users}, items {out_of_emb_items}.")
+        if show_logs:
+            print(f"Out of embeddings users {out_of_emb_users}/{len(item_user_array)}, items {out_of_emb_items}/{len(item_user_array)}.")
         return np.asarray(observations)
 
     def _predict(
@@ -112,7 +117,7 @@ class RLRecommender(Recommender):
                 'user_idx': np.repeat(user, len(items)),
                 'item_idx': items
             })
-            observation =  self._idx2obs(user_item_pairs.to_numpy())
+            observation =  self._idx2obs(user_item_pairs.to_numpy(), show_logs = False)
             user_item_pairs['relevance'] = self.model.predict(observation)
             user_predictions.append(user_item_pairs)
 
