@@ -122,7 +122,7 @@ class RLRecommender(Recommender):
             user_predictions.append(user_item_pairs)
 
         prediction = pd.concat(user_predictions)
-        print(prediction)
+        print(prediction['relevance'])
         # it doesn't explicitly filter seen items and doesn't return top k items
         # instead, it keeps all predictions as is to be filtered further by base methods
         return DataPreparator.read_as_spark_df(prediction)
