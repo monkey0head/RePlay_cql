@@ -67,7 +67,7 @@ class RLRecommender(Recommender):
     def _idx2obs(self, item_user_array, show_logs = True):
        # observations = np.array(user_logs[['user_idx', 'item_idx']])
         observations = []
-        print("Prepare embedings...")
+        if show_logs: print("Prepare embedings...")
         out_of_emb_users = 0
         out_of_emb_items = 0
         if show_logs:
