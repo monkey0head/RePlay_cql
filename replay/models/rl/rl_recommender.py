@@ -62,6 +62,24 @@ class RLRecommender(Recommender):
         self.train = None
         self.fitter = None
         self.test_log = test_log
+        
+    def _idx2obs(self, item_user_array):
+       # observations = np.array(user_logs[['user_idx', 'item_idx']])
+        observations = []
+        for obs in item_user_array:
+            if obs[0] in list(self.mapping_users.keys()):
+                user_emb = self.mapping_users[obs[0]]
+            else:
+                user_emb = np.random.uniform(0, 1, size=8)
+            
+            if obs[1] in list(self.mapping_items.keys()):
+                item_emb = self.mapping_items[obs[1]]
+            else:
+                item_emb = np.random.uniform(0, 1, size=8)
+            
+            new_obs = list(user_emb) + list(item_emb)
+            observations.append(new_obs)
+        return np.asarray(observations)
 
     def _predict(
         self,
@@ -79,17 +97,7 @@ class RLRecommender(Recommender):
 
         users = users.toPandas().to_numpy().flatten()
         items = items.toPandas().to_numpy().flatten()
-        
-        mapping_users = list(self.mapping_users.keys())
-        mapping_items = list(self.mapping_items.keys())
-        users = [self.mapping_users[user] if user in mapping_users 
-                 else np.random.uniform(0, 1, size=8) 
-                 for user in users ]
-        
-        items = [self.mapping_items[item] if item in mapping_items 
-                 else np.random.uniform(0, 1, size=8) 
-                 for item in items ]
-                 
+
         # TODO: rewrite to applyInPandas with predictUserPairs parallel batch execution
         user_predictions = []
         for user in users:
@@ -97,7 +105,8 @@ class RLRecommender(Recommender):
                 'user_idx': np.repeat(user, len(items)),
                 'item_idx': items
             })
-            user_item_pairs['relevance'] = self.model.predict(user_item_pairs.to_numpy())
+            observation =  self._idx2obs(user_item_pairs.to_numpy()):
+            user_item_pairs['relevance'] = self.model.predict(observation)
             user_predictions.append(user_item_pairs)
 
         prediction = pd.concat(user_predictions)
@@ -149,17 +158,6 @@ class RLRecommender(Recommender):
         4.0: 1.0,
         5.0: 1.0,
     }
-    
-    def _idx2obs(self, item_user_array):
-       # observations = np.array(user_logs[['user_idx', 'item_idx']])
-        observations = []
-        for obs in item_user_array:
-            user_emb = self.mapping_users[obs[0]]
-            item_emb = self.mapping_items[obs[1]]
-            
-            new_obs = list(user_emb) + list(item_emb)
-            observations.append(new_obs)
-        return np.asarray(observations)
 
 
     def _prepare_data(self, log: DataFrame, return_pd_df = False) -> MDPDataset:
