@@ -198,7 +198,7 @@ class RLRecommender(Recommender):
         user_logs['item_emb'] = user_logs['item_emb'].apply(lambda x: np.asarray(list(x)))
         user_logs['user_emb'] = user_logs['user_emb'].apply(lambda x: np.asarray(list(x)))
         observations = np.asarray(user_logs[['user_emb', 'item_emb']])
-        print(observations[:2])
+        print(np.asarray(observations[:2]))
         print("-------------------------------------")
         print(observations.shape)
         train_dataset = MDPDataset(
