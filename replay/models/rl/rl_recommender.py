@@ -80,6 +80,8 @@ class RLRecommender(Recommender):
         users = users.toPandas().to_numpy().flatten()
         items = items.toPandas().to_numpy().flatten()
         
+        mapping_users = list(self.mapping_users.keys())
+        mapping_items = list(self.mapping_items.keys())
         users = [self.mapping_users[user] if user in mapping_users 
                  else np.random.uniform(0, 1, size=8) 
                  for user in users ]
