@@ -189,7 +189,7 @@ class DCQLRecommender(RLRecommender):
             **params
         )
 
-        super(CQLRecommender, self).__init__(
+        super(DCQLRecommender, self).__init__(
             model=model,
             test_log=test_log,
             top_k=top_k, n_epochs=n_epochs,
