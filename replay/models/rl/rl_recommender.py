@@ -196,6 +196,7 @@ class RLRecommender(Recommender):
             actions += action_randomization
         
         observations = np.asarray(user_logs[['user_emb', 'item_emb']])
+        print(observations[:2])
         print("-------------------------------------")
         print(observations.shape)
         train_dataset = MDPDataset(
