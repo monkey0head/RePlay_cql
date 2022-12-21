@@ -18,7 +18,7 @@ def random_embeddings(df, emb_size):
     for user in users:
         new_vector = np.random.uniform(0, 1, size=emb_size)
         #new_vector = np.ones(emb_size)
-        mapping[user] = new_vector
+        mapping[user] = tuple(new_vector.tolist())
         inv_mapping[tuple(new_vector)] = user
     return mapping, inv_mapping
 
