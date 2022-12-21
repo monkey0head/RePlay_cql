@@ -80,8 +80,10 @@ class RLRecommender(Recommender):
         users = users.toPandas().to_numpy().flatten()
         items = items.toPandas().to_numpy().flatten()
         
-        users = [self.mapping_users[user] for user in users]
-        items = [self.mapping_items[item] for item in items]
+        users = [self.mapping_users[user] for user in users 
+                 if user in list(self.mapping_users.keys()) else np.random.uniform(0, 1, size=emb_size)]
+        items = [self.mapping_items[item] for item in items
+                if item in list(self.mapping_items.keys()) else np.random.uniform(0, 1, size=emb_size)]
         # TODO: rewrite to applyInPandas with predictUserPairs parallel batch execution
         user_predictions = []
         for user in users:
