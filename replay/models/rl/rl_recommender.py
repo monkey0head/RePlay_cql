@@ -117,12 +117,12 @@ class RLRecommender(Recommender):
                 'user_idx': np.repeat(user, len(items)),
                 'item_idx': items
             })
-            observation =  self._idx2obs(user_item_pairs.to_numpy(), show_logs = False)
+            observation =  self._idx2obs(user_item_pairs.to_numpy(), show_logs = True)
             user_item_pairs['relevance'] = self.model.predict(observation)
             user_predictions.append(user_item_pairs)
 
         prediction = pd.concat(user_predictions)
-
+        print(prediction)
         # it doesn't explicitly filter seen items and doesn't return top k items
         # instead, it keeps all predictions as is to be filtered further by base methods
         return DataPreparator.read_as_spark_df(prediction)
