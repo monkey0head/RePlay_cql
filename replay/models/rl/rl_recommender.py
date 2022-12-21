@@ -10,7 +10,7 @@ from pyspark.sql import DataFrame, functions as sf
 from replay.data_preparator import DataPreparator
 from replay.models.base_rec import Recommender
 from replay.models.rl.fake_recommender_env import FakeRecomenderEnv
-import tqdm
+from tqdm import tqdm
 
 def random_embeddings(df, emb_size):
     mapping = dict()
@@ -68,19 +68,24 @@ class RLRecommender(Recommender):
        # observations = np.array(user_logs[['user_idx', 'item_idx']])
         observations = []
         print("Prepare embedings...")
+        out_of_emb_users = 0
+        out_of_emb_items = 0
         for obs in tqdm(item_user_array):
             if obs[0] in list(self.mapping_users.keys()):
                 user_emb = self.mapping_users[obs[0]]
             else:
+                out_of_emb_users += 1
                 user_emb = np.random.uniform(0, 1, size=8)
             
             if obs[1] in list(self.mapping_items.keys()):
                 item_emb = self.mapping_items[obs[1]]
             else:
+                out_of_emb_items += 1
                 item_emb = np.random.uniform(0, 1, size=8)
             
             new_obs = list(user_emb) + list(item_emb)
             observations.append(new_obs)
+        print(f"Out of embeddings users {out_of_emb_users}, items {out_of_emb_items}.")
         return np.asarray(observations)
 
     def _predict(
