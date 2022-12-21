@@ -218,10 +218,10 @@ class RLRecommender(Recommender):
 
         if self.action_randomization_scale > 0:
             # cannot set zero scale as d3rlpy will treat transitions as discrete :/
-            action_randomization_scale = self.action_randomization_scale
-            action_randomization = np.random.randn(len(user_logs)) * action_randomization_scale
+           # action_randomization_scale = self.action_randomization_scale
+          #  action_randomization = np.random.randn(len(user_logs)) * action_randomization_scale
             actions = actions.astype(np.float64)
-            actions += action_randomization
+          #  actions += action_randomization
             
         observations = self._idx2obs(np.array(user_logs[['user_idx', 'item_idx']]))
        # print(np.asarray(observations[:2]))
