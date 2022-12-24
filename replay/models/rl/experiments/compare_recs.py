@@ -133,11 +133,15 @@ class RatingsDataset:
         test_users = raw_test.select('user_idx').distinct().cache().toPandas()
        # print(train_users)
        # print(test_users)
+        count_cold = 0
         for user in list(test_users.values):
             #print(user)
             if user not in list(train_users.values):
                 print(user)
+                count_cold += 1
                 print("Aboba!")
+        print(f"Cold values: {count_cold}/{len(list(test_users.values)}")
+        #count_cold 
             
 
     def _filter_rares(self, min_k_ratings: int):
