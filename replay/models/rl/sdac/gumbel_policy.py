@@ -24,7 +24,7 @@ class GumbelPolicy(CategoricalPolicy):
         super().__init__(encoder, action_size)
         self._encoder = encoder
         self._fc = nn.Linear(encoder.get_feature_size(), action_size)
-        self.softmax = nn.Softmax(dim=1)
+        self.softmax = nn.LogSoftmax(dim=1)
 
     def forward(
         self,
