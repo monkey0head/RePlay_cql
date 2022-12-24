@@ -75,14 +75,14 @@ class RLRecommender(Recommender):
         else:
             gen = item_user_array
         for obs in gen:
-            if obs[1] in list(self.mapping_users.keys()):
-                user_emb = self.mapping_users[obs[1]]
+            if obs[0] in list(self.mapping_users.keys()):
+                user_emb = self.mapping_users[obs[0]]
             else:
                 out_of_emb_users += 1
                 user_emb = np.random.uniform(0, 1, size=8)
             
-            if obs[0] in list(self.mapping_items.keys()):
-                item_emb = self.mapping_items[obs[0]]
+            if obs[1] in list(self.mapping_items.keys()):
+                item_emb = self.mapping_items[obs[1]]
             else:
                 out_of_emb_items += 1
                 item_emb = np.random.uniform(0, 1, size=8)
