@@ -216,13 +216,13 @@ class RLRecommender(Recommender):
 
         actions = user_logs['relevance'].to_numpy()
         if not self.rating_actions:
-            actions = (actions >= 3).astype(int)
+            actions = (actions >= 3)#.astype(int)
 
-        if self.action_randomization_scale > 0:
+       # if self.action_randomization_scale > 0:
             # cannot set zero scale as d3rlpy will treat transitions as discrete :/
            # action_randomization_scale = self.action_randomization_scale
           #  action_randomization = np.random.randn(len(user_logs)) * action_randomization_scale
-            actions = actions.astype(np.float64)
+          #  actions = actions.astype(np.float64)
           #  actions += action_randomization
             
         observations = self._idx2obs(np.array(user_logs[['user_idx', 'item_idx']]))
