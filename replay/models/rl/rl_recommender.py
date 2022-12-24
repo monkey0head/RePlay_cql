@@ -235,6 +235,7 @@ class RLRecommender(Recommender):
             rewards=rewards,
             terminals=terminals
         )
+        print(actions)
         if return_pd_df:
             user_logs['rating'] = actions
             user_logs['rewards'] = rewards
