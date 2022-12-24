@@ -140,7 +140,7 @@ class RatingsDataset:
                 print(user)
                 count_cold += 1
                 print("Aboba!")
-        print(f"Cold values: {count_cold}/{len(list(test_users.values)}")
+        print(f"Cold values: {count_cold}/{len(list(test_users.values))}")
         #count_cold 
             
 
