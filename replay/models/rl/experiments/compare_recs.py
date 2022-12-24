@@ -130,7 +130,7 @@ class RatingsDataset:
         self.test_users = test_users
         
         train_users = raw_train.select('user_idx').distinct().cache().toPandas()
-        test_users = test_users.toPandas()
+        test_users = raw_test.toPandas()
        # print(train_users)
        # print(test_users)
         for user in list(test_users.values):
