@@ -131,7 +131,8 @@ class RatingsDataset:
         
         train_users = raw_train.select('user_idx').distinct().cache()
         for user in test_users:
-            if user not in train_users:
+            print(user)
+            if user not in list(train_users):
                 print("Aboba!")
             
 
