@@ -134,8 +134,9 @@ class RatingsDataset:
        # print(train_users)
        # print(test_users)
         for user in list(test_users.values):
-            print(user)
+            
             if user not in list(train_users.values):
+                print(user)
                 print("Aboba!")
             
 
