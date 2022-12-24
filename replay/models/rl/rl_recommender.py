@@ -182,8 +182,9 @@ class RLRecommender(Recommender):
         # TODO: consider making calculations in Spark before converting to pandas
         user_logs = log.toPandas().sort_values(['user_idx', 'timestamp'], ascending=True)
         
-        self.mapping_items, self.inv_mapp_items = random_embeddings(user_logs['item_idx'], emb_size = 8)
-        self.mapping_users, self.inv_mapp_users = random_embeddings(user_logs['user_idx'], emb_size = 8)
+        if self.mapping_items is None:
+            self.mapping_items, self.inv_mapp_items = random_embeddings(user_logs['item_idx'], emb_size = 8)
+            self.mapping_users, self.inv_mapp_users = random_embeddings(user_logs['user_idx'], emb_size = 8)
         
         if self.rating_based_reward:
             rescale = self.raw_rating_to_reward_rescale
