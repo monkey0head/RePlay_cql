@@ -129,8 +129,8 @@ class RatingsDataset:
         self.test = test
         self.test_users = test_users
         
-        for user in test_users.values:
-            if user not in self.raw_train['user_idx']:
+        for user in test_users:
+            if user not in self.raw_train['user_idx'].values():
                 print("Aboba!")
             
 
