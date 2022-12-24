@@ -215,8 +215,8 @@ class RLRecommender(Recommender):
         terminals[user_terminal_idxs] = 1
 
         actions = user_logs['relevance'].to_numpy()
-        if not self.rating_actions:
-            actions = (actions >= 3)#.astype(int)
+       # if not self.rating_actions:
+           # actions = (actions >= 3)#.astype(int)
 
        # if self.action_randomization_scale > 0:
             # cannot set zero scale as d3rlpy will treat transitions as discrete :/
