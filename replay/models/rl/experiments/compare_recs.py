@@ -128,6 +128,11 @@ class RatingsDataset:
         self.raw_test = raw_test
         self.test = test
         self.test_users = test_users
+        
+        for user in test_users.values:
+            if user not in self.raw_train['user_idx']:
+                print("Aboba!")
+            
 
     def _filter_rares(self, min_k_ratings: int):
         log = self.log.cache()
