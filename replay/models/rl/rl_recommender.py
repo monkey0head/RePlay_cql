@@ -63,6 +63,8 @@ class RLRecommender(Recommender):
         self.train = None
         self.fitter = None
         self.test_log = test_log
+        self.user_item_pairs = None
+        self.observations_test = None
         
     def _idx2obs(self, item_user_array, show_logs = True):
        # observations = np.array(user_logs[['user_idx', 'item_idx']])
@@ -94,7 +96,21 @@ class RLRecommender(Recommender):
         if show_logs:
             print(f"Out of embeddings users {out_of_emb_users}/{len(item_user_array)}, items {out_of_emb_items}/{len(item_user_array)}. \n")
         return np.asarray(observations)
-
+    
+    def __make_obs_for_test(self, users):
+        self.user_item_pairs = []
+        self.observations_test = []
+        for user in users:
+            user_item_pairs = pd.DataFrame({
+                'user_idx': np.repeat(user, len(items)),
+                'item_idx': items
+            })            
+            observation =  self._idx2obs(user_item_pairs.to_numpy(), show_logs = False)
+            self.user_item_pairs.append(user_item_pairs)
+            self.observations_test.append(observation)
+            
+        
+    
     def _predict(
         self,
         log: DataFrame,
@@ -114,12 +130,10 @@ class RLRecommender(Recommender):
 
         # TODO: rewrite to applyInPandas with predictUserPairs parallel batch execution
         user_predictions = []
-        for user in users:
-            user_item_pairs = pd.DataFrame({
-                'user_idx': np.repeat(user, len(items)),
-                'item_idx': items
-            })
-            observation =  self._idx2obs(user_item_pairs.to_numpy(), show_logs = False)
+        if self.observations_test is None:
+            self.__make_obs_for_test(users)
+            
+        for user_item_pairs,observation in  zip(self.user_item_pairs, self.observations_test):
             user_item_pairs['relevance'] = self.model.predict(observation)
             user_predictions.append(user_item_pairs)
 
