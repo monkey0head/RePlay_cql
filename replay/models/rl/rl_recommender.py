@@ -92,7 +92,7 @@ class RLRecommender(Recommender):
             new_obs = list(user_emb) + list(item_emb)
             observations.append(new_obs)
         if show_logs:
-            print(f"Out of embeddings users {out_of_emb_users}/{len(item_user_array)}, items {out_of_emb_items}/{len(item_user_array)}.")
+            print(f"Out of embeddings users {out_of_emb_users}/{len(item_user_array)}, items {out_of_emb_items}/{len(item_user_array)}. \n")
         return np.asarray(observations)
 
     def _predict(
@@ -149,8 +149,8 @@ class RLRecommender(Recommender):
             self.fitter = self.model.fitter(
                 self.train,
                # n_epochs=self.n_epochs,
-                n_steps = 2000*self.n_epochs,
-                n_steps_per_epoch = 2000,
+                n_steps = 20000*self.n_epochs,
+                n_steps_per_epoch = 20000,
                 # eval_episodes=self.train,
                 # scorers={'environment': evaluate_scorer}
             )
