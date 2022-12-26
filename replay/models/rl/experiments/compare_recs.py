@@ -340,13 +340,13 @@ class BareRatingsRunner:
         for alg in algorithms:
             if alg == 'cql':
                 from replay.models.rl.dcql_recommender import DCQLRecommender
-                models['CQL'] = build_rl_recommender(DCQLRecommender, self.dataset.raw_train), self.dataset.raw_train
+                models['CQL'] = build_rl_recommender(DCQLRecommender, self.dataset.raw_train[:10000]), self.dataset.raw_train
             elif alg == 'sdac':
                 from replay.models.rl.sdac.sdac_recommender import SDACRecommender
-                models['SDAC'] = build_rl_recommender(SDACRecommender, self.dataset.raw_train), self.dataset.raw_train
+                models['SDAC'] = build_rl_recommender(SDACRecommender, self.dataset.raw_train[:10000]), self.dataset.raw_train
             elif alg == 'crr':
                 from replay.models.rl.crr_recommender import CRRRecommender
-                models['CRR'] = build_rl_recommender(CRRRecommender, self.dataset.raw_train), self.dataset.raw_train
+                models['CRR'] = build_rl_recommender(CRRRecommender, self.dataset.raw_train[:10000]), self.dataset.raw_train
             elif alg == 'ddpg':
                 from replay.models.rl.ddpg_recommender import DDPG
                 # full-log nums => I take an upper-bound
