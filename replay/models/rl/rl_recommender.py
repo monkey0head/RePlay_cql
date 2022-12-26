@@ -97,7 +97,7 @@ class RLRecommender(Recommender):
             print(f"Out of embeddings users {out_of_emb_users}/{len(item_user_array)}, items {out_of_emb_items}/{len(item_user_array)}. \n")
         return np.asarray(observations)
     
-    def __make_obs_for_test(self, users):
+    def __make_obs_for_test(self, users, items):
         self.user_item_pairs = []
         self.observations_test = []
         for user in users:
@@ -131,7 +131,7 @@ class RLRecommender(Recommender):
         # TODO: rewrite to applyInPandas with predictUserPairs parallel batch execution
         user_predictions = []
         if self.observations_test is None:
-            self.__make_obs_for_test(users)
+            self.__make_obs_for_test(users, items)
             
         for user_item_pairs,observation in  zip(self.user_item_pairs, self.observations_test):
             user_item_pairs['relevance'] = self.model.predict(observation)
@@ -163,8 +163,8 @@ class RLRecommender(Recommender):
             self.fitter = self.model.fitter(
                 self.train,
                # n_epochs=self.n_epochs,
-                n_steps = 20000*self.n_epochs,
-                n_steps_per_epoch = 20000,
+                n_steps = 200*self.n_epochs,
+                n_steps_per_epoch = 200,
                 # eval_episodes=self.train,
                 # scorers={'environment': evaluate_scorer}
             )
