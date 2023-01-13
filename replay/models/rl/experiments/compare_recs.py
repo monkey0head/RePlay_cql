@@ -129,6 +129,12 @@ class RatingsDataset:
         self.test = test
         self.test_users = test_users
         
+        test_df = self.test.toPandas()
+        train_df = self.raw_train.toPandas()
+        
+        test_df.to_csv("test_df.csv", sep='\t')
+        train_df.to_csv("train_df.csv", sep='\t')
+        
         train_users = raw_train.select('user_idx').distinct().cache().toPandas()
         test_users = raw_test.select('user_idx').distinct().cache().toPandas()
        # print(train_users)
