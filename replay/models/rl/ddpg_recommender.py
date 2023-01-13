@@ -211,7 +211,7 @@ class ActorDRR(nn.Module):
     ):
         super().__init__()
         print(user_num,  item_num, embedding_dim, hidden_dim, memory_size)
-        exit()
+      #  exit()
         self.layers = nn.Sequential(
             nn.Linear(embedding_dim * 3, hidden_dim),
             nn.LayerNorm(hidden_dim),
