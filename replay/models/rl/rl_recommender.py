@@ -171,6 +171,8 @@ class RLRecommender(Recommender):
                 eval_episodes=self.train[:1000],
                 scorers={'ndcg_sorer': self.scorer}
             )
+            
+            model.fit(self.train, eval_episodes=self.train,n_epochs = 10, scorers={'NDCG': self.scorer})
 
         try:
             next(self.fitter)
