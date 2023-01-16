@@ -163,14 +163,15 @@ class RLRecommender(Recommender):
         #evaluate_on_environment(env)
 
         if self.fitter is None:
-            self.fitter = self.model.fitter(
-                self.train,
-               # n_epochs=self.n_epochs,
-                n_steps = 2000*self.n_epochs,
-                n_steps_per_epoch = 2000,
-                eval_episodes=self.train[:1000],
-                scorers={'ndcg_sorer': self.scorer}
-            )
+            self.fitter = 3
+#             self.fitter = self.model.fitter(
+#                 self.train,
+#                # n_epochs=self.n_epochs,
+#                 n_steps = 2000*self.n_epochs,
+#                 n_steps_per_epoch = 2000,
+#                 eval_episodes=self.train[:1000],
+#                 scorers={'ndcg_sorer': self.scorer}
+            #)
             
            # self.model.fit(self.train, eval_episodes=self.train,n_epochs = 10, scorers={'NDCG': self.scorer})
 
