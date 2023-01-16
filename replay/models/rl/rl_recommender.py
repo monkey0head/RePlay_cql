@@ -153,7 +153,7 @@ class RLRecommender(Recommender):
             users_obs = [self.mapping_users[user] for user in users_obs_orig]
             
             obs_for_pred, users = item_user_pair(items_obs, users_obs)    
-            self.scorer = true_ndcg(obs_for_pred, users, inv_map_items, top_k = args.top_k)
+            self.scorer = true_ndcg(obs_for_pred, users, self.inv_mapp_items, top_k = args.top_k)
         
         if self.test_log:
             _, val_df = self._prepare_data(self.test_log, True)
