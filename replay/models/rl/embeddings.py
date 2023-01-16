@@ -22,8 +22,8 @@ def als_embeddings(df_full, emb_size=8):
     user_list = list(set(users))
     item_list = list(set(items))
     
-    user_embeddings = [tuple(emb.tolist()) for emb in user_embeddings.to_numpy()]
-    item_embeddings = [tuple(emb.tolist()) for emb in item_embeddings.to_numpy()]
+    user_embeddings = [tuple(emb.tolist()) for emb in user_embeddings]
+    item_embeddings = [tuple(emb.tolist()) for emb in item_embeddings]
                      
     user_mapping = dict(zip(user_list, user_embeddings))
     item_mapping = dict(zip(item_list, item_embeddings))   
