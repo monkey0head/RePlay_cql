@@ -12,16 +12,8 @@ from replay.models.base_rec import Recommender
 from replay.models.rl.fake_recommender_env import FakeRecomenderEnv
 from tqdm import tqdm
 
-def random_embeddings(df, emb_size):
-    mapping = dict()
-    inv_mapping = dict()
-    users = list(set(df))
-    for user in users:
-        new_vector = np.random.uniform(0, 1, size=emb_size)
-        #new_vector = np.ones(emb_size)
-        mapping[user] = tuple(new_vector.tolist())
-        inv_mapping[tuple(new_vector)] = user
-    return mapping, inv_mapping
+from embeddings import random_embeddings, als_embeddings, ddpg_embeddings
+
 
 class RLRecommender(Recommender):
     top_k: int
@@ -164,7 +156,7 @@ class RLRecommender(Recommender):
                 self.train,
                # n_epochs=self.n_epochs,
                 n_steps = 200*self.n_epochs,
-                n_steps_per_epoch = 200,
+                n_steps_per_epoch = 2000,
                 # eval_episodes=self.train,
                 # scorers={'environment': evaluate_scorer}
             )
@@ -200,27 +192,28 @@ class RLRecommender(Recommender):
         
         if self.mapping_items is None:
             print("! ---- Generate new embedings ---- !")
-            self.mapping_items, self.inv_mapp_items = random_embeddings(user_logs['item_idx'], emb_size = 8)
-            self.mapping_users, self.inv_mapp_users = random_embeddings(user_logs['user_idx'], emb_size = 8)
+            embedings = als_embeddings(user_logs, emb_size = 8)
+            self.mapping_users, self.inv_mapp_users, self.mapping_items, self.inv_mapp_items = embedings
+          #  self.mapping_users, self.inv_mapp_users = als_embeddings(user_logs, emb_size = 8)
         
-        if self.rating_based_reward:
-            rescale = self.raw_rating_to_reward_rescale
-        else:
-            rescale = self.binary_rating_to_reward_rescale
+        #if self.rating_based_reward:
+           # rescale = self.raw_rating_to_reward_rescale
+        #else:
+          #  rescale = self.binary_rating_to_reward_rescale
         rewards = user_logs['relevance'].map(rescale).to_numpy()
 
-        if self.reward_top_k:
-            # additionally reward top-K watched movies
-            user_top_k_idxs = (
-                user_logs
-                .sort_values(['relevance', 'timestamp'], ascending=[False, True])
-                .groupby('user_idx')
-                .head(self.k)
-                .index
-            )
-            # rescale positives and additionally reward top-K watched movies
-            rewards[rewards > 0] /= 2
-            rewards[user_top_k_idxs] += 0.5
+#         if self.reward_top_k:
+#             # additionally reward top-K watched movies
+#             user_top_k_idxs = (
+#                 user_logs
+#                 .sort_values(['relevance', 'timestamp'], ascending=[False, True])
+#                 .groupby('user_idx')
+#                 .head(self.k)
+#                 .index
+#             )
+#             # rescale positives and additionally reward top-K watched movies
+#             rewards[rewards > 0] /= 2
+#             rewards[user_top_k_idxs] += 0.5
 
         # every user has his own episode (the latest item is defined as terminal)
         user_terminal_idxs = (
