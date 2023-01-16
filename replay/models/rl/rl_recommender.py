@@ -145,7 +145,7 @@ class RLRecommender(Recommender):
             self.train: MDPDataset = self._prepare_data(log)
             user_logs = log.toPandas().sort_values(['user_idx', 'timestamp'], ascending=True)
             
-            items_obs_orig = np.unique(user_logs['item_idX'].values)
+            items_obs_orig = np.unique(user_logs['item_idx'].values)
             users_obs_orig = np.unique(user_logs['user_idx'].values)
 
             items_obs = [self.mapping_items[item] for item in items_obs_orig]
