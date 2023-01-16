@@ -147,7 +147,8 @@ class RLRecommender(Recommender):
             
             items_obs_orig = np.unique(user_logs['item_idx'].values)
             users_obs_orig = np.unique(user_logs['user_idx'].values)
-
+            
+            print(self.mapping_items.keys())
             items_obs = [self.mapping_items[item] for item in items_obs_orig]
             users_obs = [self.mapping_users[user] for user in users_obs_orig]
             
