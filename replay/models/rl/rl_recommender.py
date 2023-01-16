@@ -13,7 +13,7 @@ from replay.models.rl.fake_recommender_env import FakeRecomenderEnv
 from tqdm import tqdm
 
 from replay.models.rl.embeddings import random_embeddings, als_embeddings, ddpg_embeddings
-
+from replay.models.rl.metrics import true_ndcg
 
 class RLRecommender(Recommender):
     top_k: int
@@ -133,7 +133,7 @@ class RLRecommender(Recommender):
         print(prediction['relevance'])
         # it doesn't explicitly filter seen items and doesn't return top k items
         # instead, it keeps all predictions as is to be filtered further by base methods
-        return DataPreparator.read_as_spark_df(prediction)
+        return DataPreparator.read_as_spark_df(prediction)        
 
     def _fit(
         self,
@@ -143,13 +143,23 @@ class RLRecommender(Recommender):
     ) -> None:
         if self.train is None:
             self.train: MDPDataset = self._prepare_data(log)
+            user_logs = log.toPandas().sort_values(['user_idx', 'timestamp'], ascending=True)
+            
+            items_obs_orig = np.unique(user_logs['item_idX'].values)
+            users_obs_orig = np.unique(user_logs['user_idx'].values)
+
+            items_obs = [self.mapping_items[item] for item in items_obs_orig]
+            users_obs = [self.mapping_users[user] for user in users_obs_orig]
+            
+            obs_for_pred, users = item_user_pair(items_obs, users_obs)    
+            self.scorer = true_ndcg(obs_for_pred, users, inv_mapp_items, top_k = args.top_k)
+        
         if self.test_log:
             _, val_df = self._prepare_data(self.test_log, True)
-           # raise Exception (len(self.test_log))
             indx = np.arange(len(val_df))
             np.random.shuffle(indx)
-            env = FakeRecomenderEnv(val_df.iloc[indx[:10000]], self.k)
-            # evaluate_scorer = evaluate_on_environment(env)
+            #env = FakeRecomenderEnv(val_df.iloc[indx[:10000]], self.k)
+        #evaluate_on_environment(env)
 
         if self.fitter is None:
             self.fitter = self.model.fitter(
@@ -157,8 +167,8 @@ class RLRecommender(Recommender):
                # n_epochs=self.n_epochs,
                 n_steps = 2000*self.n_epochs,
                 n_steps_per_epoch = 2000,
-                # eval_episodes=self.train,
-                # scorers={'environment': evaluate_scorer}
+                eval_episodes=self.train[:1000],
+                scorers={'ndcg_sorer': self.scorer}
             )
 
         try:
