@@ -36,6 +36,7 @@ def true_ndcg(obs_for_pred, users_full, inv_mapp_items, top_k = 10):
         return original
             
     def metrics(model = None, episodes = None):
+            print(len(episodes))
             metrics_ndcg = []
             for episode in episodes:
                 current_user = episode.observations[0][:8]
