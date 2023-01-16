@@ -179,8 +179,8 @@ class RLRecommender(Recommender):
             print(len(self.user_logs))
             print(len(self.train))
             print(self.train.observations[0])
-            print(self.train.actions[0])
-            print(self.train.rewards[0])
+            print(self.train.actions)
+            print(self.train.rewards)
             self.model.fit(self.train, eval_episodes=self.train,n_epochs = 10, scorers={'NDCG': self.scorer})
             #next(self.model.fitter)
         except StopIteration:
