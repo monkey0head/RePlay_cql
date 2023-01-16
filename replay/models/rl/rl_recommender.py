@@ -143,10 +143,10 @@ class RLRecommender(Recommender):
     ) -> None:
         if self.train is None:
             self.train: MDPDataset = self._prepare_data(log)
-            user_logs = log.toPandas().sort_values(['user_idx', 'timestamp'], ascending=True)
+            #user_logs = log.toPandas().sort_values(['user_idx', 'timestamp'], ascending=True)
             
-            items_obs_orig = np.unique(user_logs['item_idx'].values)
-            users_obs_orig = np.unique(user_logs['user_idx'].values)
+            items_obs_orig = np.unique(self.user_logs['item_idx'].values)
+            users_obs_orig = np.unique(self.user_logs['user_idx'].values)
             
             print(self.mapping_items.keys())
             items_obs = [self.mapping_items[item] for item in items_obs_orig]
@@ -203,6 +203,7 @@ class RLRecommender(Recommender):
         
         if self.mapping_items is None:
             print("! ---- Generate new embedings ---- !")
+            self.user_logs = user_logs
             embedings = als_embeddings(user_logs, emb_size = 8)
             self.mapping_users, self.inv_mapp_users, self.mapping_items, self.inv_mapp_items = embedings
           #  self.mapping_users, self.inv_mapp_users = als_embeddings(user_logs, emb_size = 8)
