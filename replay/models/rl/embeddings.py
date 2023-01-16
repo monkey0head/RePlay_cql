@@ -12,7 +12,7 @@ from replay.models.rl.ddpg_embeddings import load_embeddings
 def als_embeddings(df_full, emb_size=8):
     users = df_full['user_idx']
     items = df_full['item_idx']
-    values = df_full['rating']
+    values = df_full['relevance']
     sparse_matrix = coo_matrix((values, (users, items)))
     model = implicit.als.AlternatingLeastSquares(factors=8)
     model.fit(sparse_matrix)
