@@ -200,7 +200,8 @@ class RLRecommender(Recommender):
            # rescale = self.raw_rating_to_reward_rescale
         #else:
           #  rescale = self.binary_rating_to_reward_rescale
-        rewards = user_logs['relevance'].map(rescale).to_numpy()
+       # rewards = user_logs['relevance'].map(rescale).to_numpy()
+        rewards = user_logs['relevance'].to_numpy()
 
 #         if self.reward_top_k:
 #             # additionally reward top-K watched movies
