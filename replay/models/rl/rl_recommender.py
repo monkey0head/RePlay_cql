@@ -175,7 +175,8 @@ class RLRecommender(Recommender):
            # self.model.fit(self.train, eval_episodes=self.train,n_epochs = 10, scorers={'NDCG': self.scorer})
 
         try:
-            next(self.model.fitter)
+            self.model.fit(self.train, eval_episodes=self.train,n_epochs = 10, scorers={'NDCG': self.scorer})
+            #next(self.model.fitter)
         except StopIteration:
             pass
 
