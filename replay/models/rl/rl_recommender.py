@@ -12,7 +12,7 @@ from replay.models.base_rec import Recommender
 from replay.models.rl.fake_recommender_env import FakeRecomenderEnv
 from tqdm import tqdm
 
-from embeddings import random_embeddings, als_embeddings, ddpg_embeddings
+from replay.models.rl.embeddings import random_embeddings, als_embeddings, ddpg_embeddings
 
 
 class RLRecommender(Recommender):
