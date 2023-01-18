@@ -100,14 +100,16 @@ class RatingsDataset:
 
     def _build_train_test(self, test_ratio: float):
         log = self.log.cache()
-
+        log = log.withColumnRenamed("relevance","rating").cache()
         # will consider ratings >= 3 as positive feedback and negative otherwise
         binary_log = log.withColumn(
             'relevance',
             sf
-            .when(sf.col('relevance') >= sf.lit(3), sf.lit(1.0))
+            .when(sf.col('rating') >= sf.lit(3), sf.lit(1.0))
             .otherwise(sf.lit(0.))
         ).cache()
+        
+        
 
         # train/test split
         date_splitter = DateSplitter(
@@ -116,7 +118,10 @@ class RatingsDataset:
         )
         binary_train, test = date_splitter.split(binary_log)
         pos_binary_train = binary_train.filter(sf.col('relevance') > sf.lit(0)).cache()
-
+        
+        binary_log = binary_log.withColumnRenamed("relevance","bin_relevance").cache()
+        binary_log = binary_log.withColumnRenamed("rating","relevance").cache()
+        
         test_start = test.agg(sf.min('timestamp')).collect()[0][0]
         raw_train = log.filter(sf.col('timestamp') < test_start).cache()
         raw_test = log.filter(sf.col('timestamp') >= test_start).cache()
