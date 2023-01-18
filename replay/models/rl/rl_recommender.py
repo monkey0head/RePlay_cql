@@ -151,6 +151,7 @@ class RLRecommender(Recommender):
             if self.test_log_pd is None:
                 self.test_log_pd = self.test_log.toPandas().sort_values(['user_idx', 'timestamp'], ascending=True)
             print(self.test_log_pd['relevance'].mean())
+            exit()
             items_obs_orig = np.unique(self.test_log_pd['item_idx'].values)
             users_obs_orig = np.unique(self.test_log_pd['user_idx'].values)
             
