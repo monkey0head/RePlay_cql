@@ -164,14 +164,14 @@ class RLRecommender(Recommender):
 
         if self.fitter is None:
             self.fitter = 3
-#             self.fitter = self.model.fitter(
-#                 self.train,
-#                # n_epochs=self.n_epochs,
-#                 n_steps = 2000*self.n_epochs,
-#                 n_steps_per_epoch = 2000,
-#                 eval_episodes=self.train[:1000],
-#                 scorers={'ndcg_sorer': self.scorer}
-            #)
+            self.fitter = self.model.fitter(
+                self.train,
+                n_epochs=self.n_epochs,
+                #n_steps = 2000*self.n_epochs,
+               # n_steps_per_epoch = 2000,
+                eval_episodes=self.train,
+                scorers={'ndcg_sorer': self.scorer}
+            )
             
            # self.model.fit(self.train, eval_episodes=self.train,n_epochs = 10, scorers={'NDCG': self.scorer})
 
@@ -181,8 +181,8 @@ class RLRecommender(Recommender):
           ##  print(self.train.observations[0])
           #  print(self.train.actions)
           #  print(self.train.rewards)
-            self.model.fit(self.train, eval_episodes=self.train,n_epochs = 100, scorers={'NDCG': self.scorer})
-            #next(self.model.fitter)
+          #  self.model.fit(self.train, eval_episodes=self.train,n_epochs = 100, scorers={'NDCG': self.scorer})
+            next(self.fitter)
         except StopIteration:
             pass
 
