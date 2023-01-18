@@ -284,7 +284,7 @@ class BareRatingsRunner:
                     continue
 
                 start_time = time.time()
-                pred = model.predict(log=train, k=self.k, users=self.dataset.test_users).cache()
+                pred = model.predict(log=self.dataset.test, k=self.k, users=self.dataset.test_users).cache()
                 predict_time += time.time() - start_time
 
                 name = f'{model_name}.{epoch}' if epoch > 1 else model_name
@@ -346,13 +346,13 @@ class BareRatingsRunner:
         for alg in algorithms:
             if alg == 'cql':
                 from replay.models.rl.dcql_recommender import DCQLRecommender
-                models['CQL'] = build_rl_recommender(DCQLRecommender, self.dataset.raw_train), self.dataset.raw_train
+                models['CQL'] = build_rl_recommender(DCQLRecommender, self.dataset.raw_train), self.dataset.test
             elif alg == 'sdac':
                 from replay.models.rl.sdac.sdac_recommender import SDACRecommender
-                models['SDAC'] = build_rl_recommender(SDACRecommender, self.dataset.raw_train), self.dataset.raw_train
+                models['SDAC'] = build_rl_recommender(SDACRecommender, self.dataset.raw_train), self.dataset.test
             elif alg == 'crr':
                 from replay.models.rl.crr_recommender import CRRRecommender
-                models['CRR'] = build_rl_recommender(CRRRecommender, self.dataset.raw_train), self.dataset.raw_train
+                models['CRR'] = build_rl_recommender(CRRRecommender, self.dataset.raw_train), self.dataset.test
             elif alg == 'ddpg':
                 from replay.models.rl.ddpg_recommender import DDPG
                 # full-log nums => I take an upper-bound

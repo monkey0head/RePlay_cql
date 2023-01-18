@@ -13,7 +13,7 @@ from replay.models.rl.fake_recommender_env import FakeRecomenderEnv
 from tqdm import tqdm
 
 from replay.models.rl.embeddings import random_embeddings, als_embeddings, ddpg_embeddings
-from replay.models.rl.metrics import true_ndcg, item_user_pair
+from replay.models.rl.rating_mdp.rating_metrics.metrics import true_ndcg, item_user_pair
 
 class RLRecommender(Recommender):
     top_k: int
