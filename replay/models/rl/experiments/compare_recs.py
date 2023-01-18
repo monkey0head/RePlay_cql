@@ -136,7 +136,7 @@ class RatingsDataset:
         train_df.to_csv("train_df.csv", sep='\t')
         
         train_users = raw_train.select('user_idx').distinct().cache().toPandas()
-        test_users = raw_test.select('user_idx').distinct().cache().toPandas()
+        test_users = test.select('user_idx').distinct().cache().toPandas()
        # print(train_users)
        # print(test_users)
         count_cold = 0
@@ -346,13 +346,13 @@ class BareRatingsRunner:
         for alg in algorithms:
             if alg == 'cql':
                 from replay.models.rl.dcql_recommender import DCQLRecommender
-                models['CQL'] = build_rl_recommender(DCQLRecommender, self.dataset.raw_test), self.dataset.raw_train
+                models['CQL'] = build_rl_recommender(DCQLRecommender, self.dataset.test), self.dataset.raw_train
             elif alg == 'sdac':
                 from replay.models.rl.sdac.sdac_recommender import SDACRecommender
-                models['SDAC'] = build_rl_recommender(SDACRecommender, self.dataset.raw_test), self.dataset.raw_train
+                models['SDAC'] = build_rl_recommender(SDACRecommender, self.dataset.test), self.dataset.raw_train
             elif alg == 'crr':
                 from replay.models.rl.crr_recommender import CRRRecommender
-                models['CRR'] = build_rl_recommender(CRRRecommender, self.dataset.raw_test), self.dataset.raw_train
+                models['CRR'] = build_rl_recommender(CRRRecommender, self.dataset.test), self.dataset.raw_train
             elif alg == 'ddpg':
                 from replay.models.rl.ddpg_recommender import DDPG
                 # full-log nums => I take an upper-bound

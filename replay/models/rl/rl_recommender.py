@@ -58,6 +58,7 @@ class RLRecommender(Recommender):
         self.test_log = test_log
         self.user_item_pairs = None
         self.observations_test = None
+        self.test_log_pd = None
         
     def _idx2obs(self, item_user_array, show_logs = True):
        # observations = np.array(user_logs[['user_idx', 'item_idx']])
@@ -147,9 +148,10 @@ class RLRecommender(Recommender):
         if self.train is None:
             self.train: MDPDataset = self._prepare_data(log)
             #user_logs = log.toPandas().sort_values(['user_idx', 'timestamp'], ascending=True)
-            
-            items_obs_orig = np.unique(self.user_logs['item_idx'].values)
-            users_obs_orig = np.unique(self.user_logs['user_idx'].values)
+            if self.test_log_pd is None:
+                self.test_log_pd = self.test_log.toPandas().sort_values(['user_idx', 'timestamp'], ascending=True)
+            items_obs_orig = np.unique(self.test_log_pd['item_idx'].values)
+            users_obs_orig = np.unique(self.test_log_pd['user_idx'].values)
             
             print(self.mapping_items.keys())
             items_obs = [self.mapping_items[item] for item in items_obs_orig]
