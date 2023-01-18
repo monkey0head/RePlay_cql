@@ -100,7 +100,10 @@ class RatingsDataset:
 
     def _build_train_test(self, test_ratio: float):
         log = self.log.cache()
-        log = log.withColumnRenamed("relevance","rating").cache()
+     #   log = log.withColumnRenamed("relevance","rating").cache()
+        
+        log = log.withColumn("rating",log["relevance"]).cache()
+      #  df.withColumn("Rate2", df["Rate"])
         # will consider ratings >= 3 as positive feedback and negative otherwise
         binary_log = log.withColumn(
             'relevance',
