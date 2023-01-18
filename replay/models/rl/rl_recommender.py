@@ -216,6 +216,7 @@ class RLRecommender(Recommender):
         if self.mapping_items is None:
             print("! ---- Generate new embedings ---- !")
             self.user_logs = user_logs
+            print(self.user_logs)
             embedings = als_embeddings(user_logs, emb_size = 8)
             self.mapping_users, self.inv_mapp_users, self.mapping_items, self.inv_mapp_items = embedings
           #  self.mapping_users, self.inv_mapp_users = als_embeddings(user_logs, emb_size = 8)
