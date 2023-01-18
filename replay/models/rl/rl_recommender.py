@@ -194,7 +194,7 @@ class RLRecommender(Recommender):
           ##  print(self.train.observations[0])
           #  print(self.train.actions)
           #  print(self.train.rewards)
-            self.model.fit(self.train, eval_episodes=self.train,n_epochs = 100, scorers={'NDCG': self.scorer})
+            self.model.fit(self.train, eval_episodes=test_mdp,n_epochs = 100, scorers={'NDCG': self.scorer})
            # next(self.fitter)
         except StopIteration:
             pass
