@@ -214,9 +214,9 @@ class RLRecommender(Recommender):
 
 
     def _prepare_data(self, log: DataFrame, return_pd_df = False, already_pd = False) -> MDPDataset:
-        if not self.use_negative_events:
+        #if not self.use_negative_events:
             # remove negative events
-            log = log.filter(sf.col('relevance') >= sf.lit(3.0))
+           # log = log.filter(sf.col('relevance') >= sf.lit(3.0))
 
         # TODO: consider making calculations in Spark before converting to pandas
         if already_pd:
