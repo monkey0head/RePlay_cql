@@ -39,10 +39,12 @@ def true_ndcg(obs_for_pred, users_full, inv_mapp_items, top_k = 10):
             metrics_ndcg = []
             for episode in episodes:
                 current_user = episode.observations[0][:8]
-              #  print(users_full)
+                print(users_full)
                 values = (users_full - current_user).mean(axis=1) 
+                print(values)
                 user_observation = obs_for_pred[np.where(values < 0.1)]
                 items = [value[8:] for value in user_observation]
+                
                 predicted_rating = model.predict(user_observation)
                 item_ratings = list(zip(items, predicted_rating))
                 #print(item_ratings)
