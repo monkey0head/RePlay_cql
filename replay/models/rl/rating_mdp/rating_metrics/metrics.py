@@ -45,12 +45,14 @@ def true_ndcg(obs_for_pred, users_full, inv_mapp_items, top_k = 10):
                 items = [value[8:] for value in user_observation]
                 predicted_rating = model.predict(user_observation)
                 item_ratings = list(zip(items, predicted_rating))
+                print(item_ratings)
                 predicted_top_items = sorted(item_ratings, key = lambda item_rat:item_rat[1])[::-1]
                 predicted_top_items = list(zip(*predicted_top_items))[0]
                 
                 #find original top items
                 true_user_items = [value[8:] for value in episode.observations]
                 true_item_ratings = episode.rewards.tolist()
+                print(true_item_ratings)
                 true_item_ratings = list(zip(true_user_items,true_item_ratings))
                 original_top_items = sorted(true_item_ratings, key = lambda item_rat:item_rat[1])[::-1]
                 original_top_items = list(zip(*original_top_items))[0]

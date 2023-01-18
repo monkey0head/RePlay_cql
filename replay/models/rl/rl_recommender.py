@@ -129,12 +129,12 @@ class RLRecommender(Recommender):
             
         for user_item_pairs,observation in  zip(self.user_item_pairs, self.observations_test):
             user_item_pairs['relevance'] = self.model.predict(observation)
-            print(user_item_pairs['relevance'])
+           # print(user_item_pairs['relevance'])
             user_predictions.append(user_item_pairs)
 
         prediction = pd.concat(user_predictions)
         
-        print(prediction['relevance'])
+       # print(prediction['relevance'])
         # it doesn't explicitly filter seen items and doesn't return top k items
         # instead, it keeps all predictions as is to be filtered further by base methods
         return DataPreparator.read_as_spark_df(prediction)        
@@ -150,8 +150,8 @@ class RLRecommender(Recommender):
             #user_logs = log.toPandas().sort_values(['user_idx', 'timestamp'], ascending=True)
             if self.test_log_pd is None:
                 self.test_log_pd = self.test_log.toPandas().sort_values(['user_idx', 'timestamp'], ascending=True)
-            print(self.test_log_pd['relevance'].mean())
-            exit()
+           # print(self.test_log_pd['relevance'].mean())
+            #exit()
             items_obs_orig = np.unique(self.test_log_pd['item_idx'].values)
             users_obs_orig = np.unique(self.test_log_pd['user_idx'].values)
             
@@ -168,7 +168,7 @@ class RLRecommender(Recommender):
         
         if self.test_log:
            # print
-            print("test log: ", self.test_log_pd)
+            #print("test log: ", self.test_log_pd)
             test_mdp, val_df = self._prepare_data(self.test_log_pd, return_pd_df = True, already_pd = True)
             indx = np.arange(len(val_df))
             np.random.shuffle(indx)
