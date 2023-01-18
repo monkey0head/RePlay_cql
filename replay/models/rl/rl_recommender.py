@@ -127,9 +127,11 @@ class RLRecommender(Recommender):
             
         for user_item_pairs,observation in  zip(self.user_item_pairs, self.observations_test):
             user_item_pairs['relevance'] = self.model.predict(observation)
+            print(user_item_pairs['relevance'])
             user_predictions.append(user_item_pairs)
 
         prediction = pd.concat(user_predictions)
+        
         print(prediction['relevance'])
         # it doesn't explicitly filter seen items and doesn't return top k items
         # instead, it keeps all predictions as is to be filtered further by base methods
