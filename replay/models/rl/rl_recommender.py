@@ -14,7 +14,7 @@ from tqdm import tqdm
 
 from replay.models.rl.embeddings import random_embeddings, als_embeddings, ddpg_embeddings
 from replay.models.rl.rating_mdp.rating_metrics.metrics import true_ndcg
-from replay.models.rl.rating_mdp.rating_metrics.prepare_data import item_user_pair
+from replay.models.rl.rating_mdp.data_preparing.prepare_data import item_user_pair
 
 class RLRecommender(Recommender):
     top_k: int
