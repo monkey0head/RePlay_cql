@@ -7,8 +7,8 @@ from d3rlpy.base import LearnableBase
 from d3rlpy.dataset import MDPDataset
 from d3rlpy.metrics import evaluate_on_environment
 #from d3rlpy.algos import DiscreteCQL, DiscreteSAC, SDAC
-
-from embeddings.embeddings import als_embeddings, random_embeddings, ddpg_embeddings
+from replay.models.rl.rating_mdp.embeddings.embeddings import als_embeddings, random_embeddings, ddpg_embeddings
+#from embeddings.embeddings import als_embeddings, random_embeddings, ddpg_embeddings
 
 def reidification(df_full):
     users = df_full['user_id']

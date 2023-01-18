@@ -4,7 +4,7 @@ from scipy.sparse import coo_matrix
 import numpy as np
 import pandas as pd
 
-from embeddings.ddpg_embeddings import load_embeddings
+from replay.models.rl.rating_mdp.embeddings.ddpg_embeddings import load_embeddings
 
     
 
