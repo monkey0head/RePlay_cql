@@ -165,6 +165,7 @@ class RLRecommender(Recommender):
             self.scorer = true_ndcg(obs_for_pred, users, self.inv_mapp_items, top_k = 10)
         
         if self.test_log:
+           # print
             test_mdp, val_df = self._prepare_data(self.test_log, True)
             indx = np.arange(len(val_df))
             np.random.shuffle(indx)
@@ -269,6 +270,7 @@ class RLRecommender(Recommender):
           #  actions += action_randomization
             
         observations = self._idx2obs(np.array(user_logs[['user_idx', 'item_idx']]))
+        print(observations)
        # print(np.asarray(observations[:2]))
        # print("-------------------------------------")
        # print(observations.shape)
