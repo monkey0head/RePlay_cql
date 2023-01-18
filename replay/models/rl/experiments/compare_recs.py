@@ -59,7 +59,7 @@ class RatingsDataset:
     def _read_dataset(name: str, category: str):
         if name == 'MovieLens':
             from rs_datasets import MovieLens
-            ds = MovieLens(version=category).ratings[:16000]
+            ds = MovieLens(version=category).ratings
         elif name == 'Amazon':
             from rs_datasets import Amazon
             ds = Amazon(category=category).ratings
@@ -346,13 +346,13 @@ class BareRatingsRunner:
         for alg in algorithms:
             if alg == 'cql':
                 from replay.models.rl.dcql_recommender import DCQLRecommender
-                models['CQL'] = build_rl_recommender(DCQLRecommender, self.dataset.raw_train), self.dataset.test
+                models['CQL'] = build_rl_recommender(DCQLRecommender, self.dataset.test), self.dataset.raw_train
             elif alg == 'sdac':
                 from replay.models.rl.sdac.sdac_recommender import SDACRecommender
-                models['SDAC'] = build_rl_recommender(SDACRecommender, self.dataset.raw_train), self.dataset.test
+                models['SDAC'] = build_rl_recommender(SDACRecommender, self.dataset.test), self.dataset.raw_train
             elif alg == 'crr':
                 from replay.models.rl.crr_recommender import CRRRecommender
-                models['CRR'] = build_rl_recommender(CRRRecommender, self.dataset.raw_train), self.dataset.test
+                models['CRR'] = build_rl_recommender(CRRRecommender, self.dataset.test), self.dataset.raw_train
             elif alg == 'ddpg':
                 from replay.models.rl.ddpg_recommender import DDPG
                 # full-log nums => I take an upper-bound
