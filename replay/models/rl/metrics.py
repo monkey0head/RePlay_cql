@@ -62,6 +62,7 @@ def true_ndcg(obs_for_pred, users_full, inv_mapp_items, top_k = 10):
 
                 ndcg_user = ndcg(top_k, predicted_to_real, original_to_real)
                 metrics_ndcg.append(ndcg_user)
+            print(metrics_ndcg)
             result = np.mean(metrics_ndcg)
             wandb.log({"NDCG": result})
             return np.mean(metrics_ndcg)
