@@ -59,7 +59,7 @@ class RatingsDataset:
     def _read_dataset(name: str, category: str):
         if name == 'MovieLens':
             from rs_datasets import MovieLens
-            ds = MovieLens(version=category).ratings[:10000]
+            ds = MovieLens(version=category).ratings[:16000]
         elif name == 'Amazon':
             from rs_datasets import Amazon
             ds = Amazon(category=category).ratings
