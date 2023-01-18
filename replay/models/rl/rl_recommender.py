@@ -153,9 +153,13 @@ class RLRecommender(Recommender):
             items_obs_orig = np.unique(self.test_log_pd['item_idx'].values)
             users_obs_orig = np.unique(self.test_log_pd['user_idx'].values)
             
-            print(self.mapping_items.keys())
-            items_obs = [self.mapping_items[item] for item in items_obs_orig]
-            users_obs = [self.mapping_users[user] for user in users_obs_orig]
+            #print(self.mapping_items.keys())
+            items_obs = [self.mapping_items[item] for item in items_obs_orig if item in list(items_obs_orig.keys())]
+            users_obs = [self.mapping_users[user] for user in users_obs_orig if user in list(users_obs_orig.keys())]
+            
+            print(len(items_obs),"/", len(items_obs_orig))
+            print(len(users_obs),"/", len(users_obs_orig))
+            
             
             obs_for_pred, users = item_user_pair(items_obs, users_obs)    
             self.scorer = true_ndcg(obs_for_pred, users, self.inv_mapp_items, top_k = 10)
