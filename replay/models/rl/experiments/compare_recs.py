@@ -284,7 +284,7 @@ class BareRatingsRunner:
                     continue
 
                 start_time = time.time()
-                pred = model.predict(log=self.dataset.test, k=self.k, users=self.dataset.test_users).cache()
+                pred = model.predict(log=train, k=self.k, users=self.dataset.test_users).cache()
                 predict_time += time.time() - start_time
 
                 name = f'{model_name}.{epoch}' if epoch > 1 else model_name
