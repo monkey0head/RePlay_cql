@@ -166,6 +166,7 @@ class RLRecommender(Recommender):
         
         if self.test_log:
            # print
+            print("test log: ", self.test_log)
             test_mdp, val_df = self._prepare_data(self.test_log, True)
             indx = np.arange(len(val_df))
             np.random.shuffle(indx)
@@ -270,12 +271,12 @@ class RLRecommender(Recommender):
           #  actions += action_randomization
             
         observations = self._idx2obs(np.array(user_logs[['user_idx', 'item_idx']]))
-        print(observations)
+        print("Observations: ", observations)
        # print(np.asarray(observations[:2]))
        # print("-------------------------------------")
        # print(observations.shape)
         train_dataset = MDPDataset(
-            observations=observations,
+            observations= np.asarray(observations),
             actions=actions[:, None],
             rewards=rewards,
             terminals=terminals
