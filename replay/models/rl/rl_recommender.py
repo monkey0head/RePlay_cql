@@ -161,7 +161,7 @@ class RLRecommender(Recommender):
             self.scorer = true_ndcg(obs_for_pred, users, self.inv_mapp_items, top_k = 10)
         
         if self.test_log:
-            _, val_df = self._prepare_data(self.test_log, True)
+            test_mdp, val_df = self._prepare_data(self.test_log, True)
             indx = np.arange(len(val_df))
             np.random.shuffle(indx)
             #env = FakeRecomenderEnv(val_df.iloc[indx[:10000]], self.k)
@@ -174,7 +174,7 @@ class RLRecommender(Recommender):
                 n_epochs=self.n_epochs,
                 #n_steps = 2000*self.n_epochs,
                # n_steps_per_epoch = 2000,
-                eval_episodes=self.train,
+                eval_episodes=test_mdp,
                 scorers={'ndcg_sorer': self.scorer}
             )
             
