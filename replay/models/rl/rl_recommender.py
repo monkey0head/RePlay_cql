@@ -167,7 +167,7 @@ class RLRecommender(Recommender):
         if self.test_log:
            # print
             print("test log: ", self.test_log_pd)
-            test_mdp, val_df = self._prepare_data(self.test_log, True)
+            test_mdp, val_df = self._prepare_data(self.test_log_pd, return_pd_df = True, already_pd = True)
             indx = np.arange(len(val_df))
             np.random.shuffle(indx)
             #env = FakeRecomenderEnv(val_df.iloc[indx[:10000]], self.k)
@@ -213,13 +213,16 @@ class RLRecommender(Recommender):
     }
 
 
-    def _prepare_data(self, log: DataFrame, return_pd_df = False) -> MDPDataset:
+    def _prepare_data(self, log: DataFrame, return_pd_df = False, already_pd = False) -> MDPDataset:
         if not self.use_negative_events:
             # remove negative events
             log = log.filter(sf.col('relevance') >= sf.lit(3.0))
 
         # TODO: consider making calculations in Spark before converting to pandas
-        user_logs = log.toPandas().sort_values(['user_idx', 'timestamp'], ascending=True)
+        if already_pd:
+            user_logs = log
+        else:
+            user_logs = log.toPandas().sort_values(['user_idx', 'timestamp'], ascending=True)
         
         if self.mapping_items is None:
             print("! ---- Generate new embedings ---- !")
