@@ -154,8 +154,8 @@ class RLRecommender(Recommender):
             users_obs_orig = np.unique(self.test_log_pd['user_idx'].values)
             
             #print(self.mapping_items.keys())
-            items_obs = [self.mapping_items[item] for item in items_obs_orig if item in list(items_obs_orig.keys())]
-            users_obs = [self.mapping_users[user] for user in users_obs_orig if user in list(users_obs_orig.keys())]
+            items_obs = [self.mapping_items[item] for item in items_obs_orig if item in list(self.mapping_items.keys())]
+            users_obs = [self.mapping_users[user] for user in users_obs_orig if user in list(self.mapping_users.keys())]
             
             print(len(items_obs),"/", len(items_obs_orig))
             print(len(users_obs),"/", len(users_obs_orig))
