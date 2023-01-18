@@ -166,7 +166,7 @@ class RLRecommender(Recommender):
         
         if self.test_log:
            # print
-            print("test log: ", self.test_log)
+            print("test log: ", self.test_log_pd)
             test_mdp, val_df = self._prepare_data(self.test_log, True)
             indx = np.arange(len(val_df))
             np.random.shuffle(indx)
