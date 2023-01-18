@@ -240,7 +240,8 @@ class RLRecommender(Recommender):
           #  rescale = self.binary_rating_to_reward_rescale
        # rewards = user_logs['relevance'].map(rescale).to_numpy()
         rewards = user_logs['relevance'].to_numpy()
-
+        print(rewards)
+        exit()
 #         if self.reward_top_k:
 #             # additionally reward top-K watched movies
 #             user_top_k_idxs = (
