@@ -122,8 +122,8 @@ class RatingsDataset:
         binary_train, test = date_splitter.split(binary_log)
         pos_binary_train = binary_train.filter(sf.col('relevance') > sf.lit(0)).cache()
         
-        binary_log = binary_log.withColumnRenamed("relevance","bin_relevance").cache()
-        binary_log = binary_log.withColumnRenamed("rating","relevance").cache()
+        test = test.withColumnRenamed("relevance","bin_relevance").cache()
+        test = test.withColumnRenamed("rating","relevance").cache()
         
         test_start = test.agg(sf.min('timestamp')).collect()[0][0]
         raw_train = log.filter(sf.col('timestamp') < test_start).cache()
