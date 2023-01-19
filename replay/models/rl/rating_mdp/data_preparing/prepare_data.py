@@ -94,7 +94,7 @@ def _prepare_data(user_logs, emb = True, return_pd_df = False, pfunc = None):
         )
         terminals = np.zeros(len(user_logs))
         terminals[user_terminal_idxs] = 1
-        
+        terminals = np.append(terminals,terminals,axis = 0) 
         train_dataset = MDPDataset(
             observations=observations,
             actions=actions[:, None],
