@@ -94,7 +94,7 @@ def _prepare_data(user_logs, emb = True, return_pd_df = False, pfunc = None):
         )
         terminals = np.zeros(len(user_logs_train))
         terminals[user_terminal_idxs] = 1
-         if pfunc.__name__ != "nr":
+        if pfunc.__name__ != "nr":
             observations = np.append(observations,observations,axis = 0) 
             terminals = np.append(terminals,terminals,axis = 0) 
         
