@@ -87,7 +87,7 @@ def _prepare_data(user_logs, emb = True, return_pd_df = False, pfunc = None):
         observations = _idx2obs(np.array(user_logs_train[['user_id', 'item_id']]), mapping_users, mapping_items)
         observations = np.append(observations,observations,axis = 0) 
         user_terminal_idxs = (
-            user_logs[::-1]
+            user_logs_train[::-1]
             .groupby('user_id')
             .head(1)
             .index
@@ -100,6 +100,7 @@ def _prepare_data(user_logs, emb = True, return_pd_df = False, pfunc = None):
         print(actions.shape)
         print(values.shape)
         print(terminals.shape)
+        
         train_dataset = MDPDataset(
             observations=observations,
             actions=actions[:, None],
@@ -111,6 +112,12 @@ def _prepare_data(user_logs, emb = True, return_pd_df = False, pfunc = None):
         values, actions = pfunc(user_logs_test)   
         observations = _idx2obs(np.array(user_logs_test[['user_id', 'item_id']]), mapping_users, mapping_items)
         
+        user_terminal_idxs = (
+            user_logs_test[::-1]
+            .groupby('user_id')
+            .head(1)
+            .index
+        )
         terminals = np.zeros(len(user_logs_test))
         terminals[user_terminal_idxs] = 1
                   
