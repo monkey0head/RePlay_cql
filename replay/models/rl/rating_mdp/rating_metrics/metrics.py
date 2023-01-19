@@ -41,7 +41,7 @@ def true_ndcg(obs_for_pred, users_full, inv_mapp_items, top_k = 10):
                 current_user = episode.observations[0][:8]
                 #print(users_full)
                 values = (users_full - current_user).mean(axis=1) 
-                print(values)
+               # print(values)
                 user_observation = obs_for_pred[np.where(values < 0.1)]
                 items = [value[8:] for value in user_observation]
                 
@@ -64,7 +64,7 @@ def true_ndcg(obs_for_pred, users_full, inv_mapp_items, top_k = 10):
 
                 ndcg_user = ndcg(top_k, predicted_to_real, original_to_real)
                 metrics_ndcg.append(ndcg_user)
-            print(metrics_ndcg)
+            #print(metrics_ndcg)
             result = np.mean(metrics_ndcg)
             wandb.log({"NDCG": result})
             return np.mean(metrics_ndcg)

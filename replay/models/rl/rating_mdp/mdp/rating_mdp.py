@@ -4,7 +4,7 @@ import numpy as np
 def binary_actions(df):
     reward = df['rating'].to_numpy().astype(np.int)
     actions = np.zeros_like(reward)
-    actions[reward >= 4] = 1
+    actions[reward >= 3] = 1
     return reward, actions
 
 def original_actions(df):
