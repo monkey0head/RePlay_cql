@@ -17,7 +17,7 @@ sys.path.append(".")
 from data_preparing.prepare_data import reidification, _prepare_data, item_user_pair
 from rating_metrics.metrics import true_ndcg
 from mdp.rating_mdp import original_actions, binary_actions,\
-                                    negative_reward_binary_actions, negative_reward
+                                    negative_reward_binary_actions, negative_reward,mono_reward
 if __name__ == "__main__":    
     parser = argparse.ArgumentParser()
     parser.add_argument('--top_k', help='int(k)', type = int)
@@ -41,6 +41,8 @@ if __name__ == "__main__":
         pfunc = negative_reward_binary_actions
     elif args.pfunc == 'nr':        
         pfunc = negative_reward
+    elif args.pfunc == 'mr':        
+        pfunc = mono_reward
     mdp, test_mdp, mapping_items, mapping_users, inv_mapp_items, inv_mapp_users, mask_test = _prepare_data(raitings, emb = args.emb, pfunc= pfunc)
     
    # print(len(mask_test), len(ml))
