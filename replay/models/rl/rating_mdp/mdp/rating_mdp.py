@@ -32,9 +32,10 @@ def negative_reward(df, invert = False):
         actions_cp = actions.copy()
         actions_cp = np.abs(actions_cp - 6)
          
-        reward = np.append(reward, reward_cp)
+        
         
         reward_cp = -np.abs(actions - actions_cp)/10
+        reward = np.append(reward, reward_cp)
         #reward_cp[:] = -1
         
         actions = np.append(actions, actions_cp)
