@@ -54,7 +54,7 @@ if __name__ == "__main__":
     obs_for_pred, users = item_user_pair(items_obs, users_obs)    
     scorer = true_ndcg(obs_for_pred, users, inv_mapp_items, top_k = args.top_k)
     
-    algo = DiscreteCQL(use_gpu=True, batch_size=1024, n_critics = 1)
+    algo = DiscreteCQL(use_gpu=False, batch_size=1024, n_critics = 1)
   #  print(args.epochs)
     algo.fit(mdp, eval_episodes=test_mdp,n_epochs = args.epochs, scorers={'NDCG': scorer})
     
