@@ -73,28 +73,30 @@ def _prepare_data(user_logs, emb = True, return_pd_df = False, pfunc = None):
             mapping_users, inv_mapp_users, mapping_items, inv_mapp_items = ddpg_embeddings(user_logs)
             
         # every user has his own episode (the latest item is defined as terminal)
-        user_terminal_idxs = (
-            user_logs[::-1]
-            .groupby('user_id')
-            .head(1)
-            .index
-        )
+#         user_terminal_idxs = (
+#             user_logs[::-1]
+#             .groupby('user_id')
+#             .head(1)
+#             .index
+#         )
         mask_train = user_logs['dataset']=='train'
         mask_test = user_logs['dataset']=='test'
         
         user_logs_train = user_logs[mask_train]
         values, actions = pfunc(user_logs_train, invert = True)   
         observations = _idx2obs(np.array(user_logs_train[['user_id', 'item_id']]), mapping_users, mapping_items)
-        observations = np.append(observations,observations,axis = 0) 
+       
         user_terminal_idxs = (
             user_logs_train[::-1]
             .groupby('user_id')
             .head(1)
             .index
         )
-        terminals = np.zeros(len(user_logs))
+        terminals = np.zeros(len(user_logs_train))
         terminals[user_terminal_idxs] = 1
-        terminals = np.append(terminals,terminals,axis = 0) 
+         if pfunc.__name__ != "nr":
+            observations = np.append(observations,observations,axis = 0) 
+            terminals = np.append(terminals,terminals,axis = 0) 
         
         print(observations.shape)
         print(actions.shape)
@@ -112,14 +114,14 @@ def _prepare_data(user_logs, emb = True, return_pd_df = False, pfunc = None):
         values, actions = pfunc(user_logs_test)   
         observations = _idx2obs(np.array(user_logs_test[['user_id', 'item_id']]), mapping_users, mapping_items)
         
-#         user_terminal_idxs = (
-#             user_logs_test[::-1]
-#             .groupby('user_id')
-#             .head(1)
-#             .index
-#         )
-#         terminals = np.zeros(len(user_logs_test))
-#         terminals[user_terminal_idxs] = 1
+        user_terminal_idxs = (
+            user_logs_test[::-1]
+            .groupby('user_id')
+            .head(1)
+            .index
+        )
+        terminals = np.zeros(len(user_logs_test))
+        terminals[user_terminal_idxs] = 1
                   
         test_dataset = MDPDataset(
             observations=observations,
