@@ -43,6 +43,8 @@ if __name__ == "__main__":
         pfunc = negative_reward
     elif args.pfunc == 'mr':        
         pfunc = mono_reward
+    elif args.pfunc == 'nrs':   
+        pfunc = negative_reward_scaled
     mdp, test_mdp, mapping_items, mapping_users, inv_mapp_items, inv_mapp_users, mask_test = _prepare_data(raitings, emb = args.emb, pfunc= pfunc)
     
    # print(len(mask_test), len(ml))

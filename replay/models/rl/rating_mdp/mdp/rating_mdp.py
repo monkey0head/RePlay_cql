@@ -33,6 +33,19 @@ def negative_reward(df, invert = False):
         actions = np.append(actions, actions_cp)
     return reward, actions
 
+def negative_reward_scaled(df, invert = True):
+    reward = df['rating'].to_numpy().astype(np.int)
+    actions = reward.copy()
+    reward[:] = 2
+    
+    if invert:
+        actions_cp = actions.copy()
+        actions_cp = np.abs(actions_cp - 6)
+        reward_cp = -np.abs(actions - actions_cp)/5
+        reward = np.append(reward[:len(reward)//2], reward_cp[len(reward)//2:])
+        actions = np.append(actions[:len(actions)//2], actions_cp[len(actions)//2:])
+    return reward, actions
+
 
 def mono_reward(df, invert = False):
     reward = df['rating'].to_numpy().astype(np.int)
