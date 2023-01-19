@@ -111,6 +111,7 @@ def _prepare_data(user_logs, emb = True, return_pd_df = False, pfunc = None):
         )
         
         user_logs_test = user_logs[mask_test]
+        user_logs_test = user_logs_test.reset_index(drop=True)
         values, actions = pfunc(user_logs_test)   
         observations = _idx2obs(np.array(user_logs_test[['user_id', 'item_id']]), mapping_users, mapping_items)
         
