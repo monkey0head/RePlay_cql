@@ -46,7 +46,7 @@ def true_ndcg(obs_for_pred, users_full, inv_mapp_items, top_k = 10):
                 items = [value[8:] for value in user_observation]
                 
                 predicted_rating = model.predict(user_observation)
-                print(predicted_rating)
+              #  print(predicted_rating)
                 item_ratings = list(zip(items, predicted_rating))
                 #print(item_ratings)
                 predicted_top_items = sorted(item_ratings, key = lambda item_rat:item_rat[1])[::-1]
