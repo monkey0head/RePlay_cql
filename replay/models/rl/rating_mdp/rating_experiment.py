@@ -8,7 +8,7 @@ import d3rlpy
 from d3rlpy.base import LearnableBase
 from d3rlpy.dataset import MDPDataset
 from d3rlpy.metrics import evaluate_on_environment
-from d3rlpy.algos import DiscreteCQL, DiscreteSAC, SDAC
+from d3rlpy.algos import DiscreteCQL, DiscreteSAC#, SDAC
 
 import rs_datasets
 import argparse
