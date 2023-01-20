@@ -222,12 +222,12 @@ class RLRecommender(Recommender):
 
         # TODO: consider making calculations in Spark before converting to pandas
         
-        print(user_logs)
+       
         if already_pd:
             user_logs = log
         else:
             user_logs = log.toPandas().sort_values(['user_idx', 'timestamp'], ascending=True)
-        
+        print(user_logs)
         if self.mapping_items is None:
             print("! ---- Generate new embedings ---- !")
             self.user_logs = user_logs
