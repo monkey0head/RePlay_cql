@@ -82,7 +82,7 @@ def _prepare_data(user_logs, emb = True, return_pd_df = False, pfunc = None):
         mask_train = user_logs['dataset']=='train'
         mask_test = user_logs['dataset']=='test'
         
-        print("TEST mask: ", mask_tset.sum())
+        print("TEST mask: ", mask_test.sum())
         user_logs_train = user_logs[mask_train]
         values, actions = pfunc(user_logs_train, invert = True)   
         observations = _idx2obs(np.array(user_logs_train[['user_id', 'item_id']]), mapping_users, mapping_items)
