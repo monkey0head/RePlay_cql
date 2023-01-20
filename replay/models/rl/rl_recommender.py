@@ -241,8 +241,9 @@ class RLRecommender(Recommender):
         #else:
           #  rescale = self.binary_rating_to_reward_rescale
        # rewards = user_logs['relevance'].map(rescale).to_numpy()
-        rewards = user_logs['relevance'].to_numpy()
+        rewards = user_logs['relevance'].to_numpy().copy()
         rewards[:] = 1
+        
        # print(rewards)
        # exit()
 #         if self.reward_top_k:
