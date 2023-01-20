@@ -114,7 +114,7 @@ def _prepare_data(user_logs, emb = True, return_pd_df = False, pfunc = None):
         user_logs_test = user_logs_test.reset_index(drop=True)
         values, actions = pfunc(user_logs_test)   
         observations = _idx2obs(np.array(user_logs_test[['user_id', 'item_id']]), mapping_users, mapping_items)
-        
+         print("train obs: ", observations)
         print("--------------------")
         print(user_logs_test)
         user_terminal_idxs_test = (
@@ -123,7 +123,7 @@ def _prepare_data(user_logs, emb = True, return_pd_df = False, pfunc = None):
             .head(1)
             .index
         )
-        
+        print("test obs: ", observations)
         terminals = np.zeros(len(user_logs_test))
         terminals[user_terminal_idxs_test] = 1
                   
