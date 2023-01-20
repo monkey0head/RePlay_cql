@@ -241,7 +241,7 @@ class RLRecommender(Recommender):
         #else:
           #  rescale = self.binary_rating_to_reward_rescale
        # rewards = user_logs['relevance'].map(rescale).to_numpy()
-        rewards = user_logs['rating'].to_numpy()
+        rewards = user_logs['relevance'].to_numpy()
         rewards[:] = 1
        # print(rewards)
        # exit()
@@ -268,7 +268,7 @@ class RLRecommender(Recommender):
         terminals = np.zeros(len(user_logs))
         terminals[user_terminal_idxs] = 1
 
-        actions = user_logs['rating'].to_numpy()
+        actions = user_logs['relevance'].to_numpy()
        # if not self.rating_actions:
            # actions = (actions >= 3)#.astype(int)
 
