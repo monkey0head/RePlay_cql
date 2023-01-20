@@ -177,14 +177,14 @@ class RLRecommender(Recommender):
 
         if self.fitter is None:
             self.fitter = 3
-            #self.fitter = self.model.fitter(
-           #     self.train,
-         #       n_epochs=self.n_epochs,
-                #n_steps = 2000*self.n_epochs,
-               # n_steps_per_epoch = 2000,
-           #     eval_episodes=test_mdp,
-           #     scorers={'ndcg_sorer': self.scorer}
-            #)
+            self.fitter = self.model.fitter(
+               self.train,
+               n_epochs=self.n_epochs,
+#                 n_steps = 2000*self.n_epochs,
+#                n_steps_per_epoch = 2000,
+               eval_episodes=test_mdp,
+               scorers={'ndcg_sorer': self.scorer}
+            )
             
            # self.model.fit(self.train, eval_episodes=self.train,n_epochs = 10, scorers={'NDCG': self.scorer})
 
@@ -194,8 +194,8 @@ class RLRecommender(Recommender):
           ##  print(self.train.observations[0])
           #  print(self.train.actions)
           #  print(self.train.rewards)
-            self.model.fit(self.train, eval_episodes=test_mdp,n_epochs = 100, scorers={'NDCG': self.scorer})
-           # next(self.fitter)
+           # self.model.fit(self.train, eval_episodes=test_mdp,n_epochs = 100, scorers={'NDCG': self.scorer})
+            next(self.fitter)
         except StopIteration:
             pass
 
@@ -240,6 +240,7 @@ class RLRecommender(Recommender):
           #  rescale = self.binary_rating_to_reward_rescale
        # rewards = user_logs['relevance'].map(rescale).to_numpy()
         rewards = user_logs['relevance'].to_numpy()
+        rewards[:] = 1
        # print(rewards)
        # exit()
 #         if self.reward_top_k:
