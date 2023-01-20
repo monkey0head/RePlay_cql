@@ -221,6 +221,8 @@ class RLRecommender(Recommender):
            # log = log.filter(sf.col('relevance') >= sf.lit(3.0))
 
         # TODO: consider making calculations in Spark before converting to pandas
+        
+        print(user_logs)
         if already_pd:
             user_logs = log
         else:
