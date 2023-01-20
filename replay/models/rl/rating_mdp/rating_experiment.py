@@ -17,7 +17,7 @@ sys.path.append(".")
 from data_preparing.prepare_data import reidification, _prepare_data, item_user_pair
 from rating_metrics.metrics import true_ndcg
 from mdp.rating_mdp import original_actions, binary_actions,\
-                                    negative_reward_binary_actions, negative_reward,mono_reward
+                                    negative_reward_binary_actions, negative_reward,mono_reward,negative_reward_scaled
 if __name__ == "__main__":    
     parser = argparse.ArgumentParser()
     parser.add_argument('--top_k', help='int(k)', type = int)
