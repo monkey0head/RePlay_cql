@@ -16,6 +16,21 @@ from replay.models.rl.embeddings import random_embeddings, als_embeddings, ddpg_
 from replay.models.rl.rating_mdp.rating_metrics.metrics import true_ndcg
 from replay.models.rl.rating_mdp.data_preparing.prepare_data import item_user_pair
 
+
+
+def negative_reward(df, invert = True):
+    reward = df['relevance'].to_numpy().astype(np.int)
+    actions = reward.copy()
+    reward[:] = 1
+    
+    if invert:
+        actions_cp = actions.copy()
+        actions_cp = np.abs(actions_cp - 6)
+        reward_cp = -np.abs(actions - actions_cp)/10
+        reward = np.append(reward, reward_cp)
+        actions = np.append(actions, actions_cp)
+    return reward, actions
+
 class RLRecommender(Recommender):
     top_k: int
     n_epochs: int
@@ -216,12 +231,7 @@ class RLRecommender(Recommender):
 
 
     def _prepare_data(self, log: DataFrame, return_pd_df = False, already_pd = False) -> MDPDataset:
-        #if not self.use_negative_events:
-            # remove negative events
-           # log = log.filter(sf.col('relevance') >= sf.lit(3.0))
-
-        # TODO: consider making calculations in Spark before converting to pandas
-        
+        # TODO: consider making calculations in Spark before converting to pandas       
        
         if already_pd:
             user_logs = log
@@ -234,31 +244,11 @@ class RLRecommender(Recommender):
             print(self.user_logs)
             embedings = als_embeddings(user_logs, emb_size = 8)
             self.mapping_users, self.inv_mapp_users, self.mapping_items, self.inv_mapp_items = embedings
-          #  self.mapping_users, self.inv_mapp_users = als_embeddings(user_logs, emb_size = 8)
-        
-        #if self.rating_based_reward:
-           # rescale = self.raw_rating_to_reward_rescale
-        #else:
-          #  rescale = self.binary_rating_to_reward_rescale
-       # rewards = user_logs['relevance'].map(rescale).to_numpy()
-        rewards = user_logs['relevance'].to_numpy().copy()
-        rewards[:] = 1
-        
-       # print(rewards)
-       # exit()
-#         if self.reward_top_k:
-#             # additionally reward top-K watched movies
-#             user_top_k_idxs = (
-#                 user_logs
-#                 .sort_values(['relevance', 'timestamp'], ascending=[False, True])
-#                 .groupby('user_idx')
-#                 .head(self.k)
-#                 .index
-#             )
-#             # rescale positives and additionally reward top-K watched movies
-#             rewards[rewards > 0] /= 2
-#             rewards[user_top_k_idxs] += 0.5
 
+        rewards, actions = negative_reward(user_logs, True)
+       # rewards = user_logs['relevance'].to_numpy().copy()
+      #  rewards[:] = 1
+ 
         # every user has his own episode (the latest item is defined as terminal)
         user_terminal_idxs = (
             user_logs[::-1]
@@ -268,23 +258,11 @@ class RLRecommender(Recommender):
         )
         terminals = np.zeros(len(user_logs))
         terminals[user_terminal_idxs] = 1
-
-        actions = user_logs['relevance'].to_numpy()
-       # if not self.rating_actions:
-           # actions = (actions >= 3)#.astype(int)
-
-       # if self.action_randomization_scale > 0:
-            # cannot set zero scale as d3rlpy will treat transitions as discrete :/
-           # action_randomization_scale = self.action_randomization_scale
-          #  action_randomization = np.random.randn(len(user_logs)) * action_randomization_scale
-          #  actions = actions.astype(np.float64)
-          #  actions += action_randomization
             
         observations = self._idx2obs(np.array(user_logs[['user_idx', 'item_idx']]))
-       # print("Observations: ", observations)
-       # print(np.asarray(observations[:2]))
-       # print("-------------------------------------")
-       # print(observations.shape)
+        observations = np.appned(observations, observations, axis = 0)
+        terminals = np.append(terminals, terminals, axis = 0)
+        
         train_dataset = MDPDataset(
             observations= np.asarray(observations),
             actions=actions[:, None],
