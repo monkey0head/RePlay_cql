@@ -260,7 +260,7 @@ class RLRecommender(Recommender):
         terminals[user_terminal_idxs] = 1
             
         observations = self._idx2obs(np.array(user_logs[['user_idx', 'item_idx']]))
-        observations = np.appned(observations, observations, axis = 0)
+        observations = np.append(observations, observations, axis = 0)
         terminals = np.append(terminals, terminals, axis = 0)
         
         train_dataset = MDPDataset(
