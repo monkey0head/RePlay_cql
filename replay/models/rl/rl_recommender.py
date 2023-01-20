@@ -245,7 +245,7 @@ class RLRecommender(Recommender):
             embedings = als_embeddings(user_logs, emb_size = 8)
             self.mapping_users, self.inv_mapp_users, self.mapping_items, self.inv_mapp_items = embedings
 
-        rewards, actions = negative_reward(user_logs, True)
+        
        # rewards = user_logs['relevance'].to_numpy().copy()
       #  rewards[:] = 1
  
@@ -260,8 +260,13 @@ class RLRecommender(Recommender):
         terminals[user_terminal_idxs] = 1
             
         observations = self._idx2obs(np.array(user_logs[['user_idx', 'item_idx']]))
-        observations = np.append(observations, observations, axis = 0)
-        terminals = np.append(terminals, terminals, axis = 0)
+        
+        if return_pd_df:            
+            rewards, actions = negative_reward(user_logs, False)
+        else:
+            rewards, actions = negative_reward(user_logs, True)
+            observations = np.append(observations, observations, axis = 0)
+            terminals = np.append(terminals, terminals, axis = 0)
         
         train_dataset = MDPDataset(
             observations= np.asarray(observations),
