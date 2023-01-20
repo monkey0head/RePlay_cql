@@ -278,7 +278,7 @@ class RLRecommender(Recommender):
           #  actions += action_randomization
             
         observations = self._idx2obs(np.array(user_logs[['user_idx', 'item_idx']]))
-        print("Observations: ", observations)
+       # print("Observations: ", observations)
        # print(np.asarray(observations[:2]))
        # print("-------------------------------------")
        # print(observations.shape)
@@ -288,7 +288,7 @@ class RLRecommender(Recommender):
             rewards=rewards,
             terminals=terminals
         )
-        print(actions)
+        #print(actions)
         if return_pd_df:
             user_logs['rating'] = actions
             user_logs['rewards'] = rewards
