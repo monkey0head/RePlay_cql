@@ -121,11 +121,12 @@ class DCQLRecommender(RLRecommender):
     def __init__(
             self, *,
             top_k: int, n_epochs: int = 1,
-            action_randomization_scale: float = 0.,
-            use_negative_events: bool = False,
-            rating_based_reward: bool = False,
-            rating_actions: bool = False,
-            reward_top_k: bool = False,
+            reward_function: str,
+#             action_randomization_scale: float = 0.,
+#             use_negative_events: bool = False,
+#             rating_based_reward: bool = False,
+#             rating_actions: bool = False,
+#             reward_top_k: bool = False,
             test_log: DataFrame = None,
 
             # CQL inner params
@@ -193,9 +194,10 @@ class DCQLRecommender(RLRecommender):
             model=model,
             test_log=test_log,
             top_k=top_k, n_epochs=n_epochs,
-            action_randomization_scale=action_randomization_scale,
-            use_negative_events=use_negative_events,
-            rating_based_reward=rating_based_reward,
-            rating_actions=rating_actions,
-            reward_top_k=reward_top_k,
+            reward_function = reward_function
+#             action_randomization_scale=action_randomization_scale,
+#             use_negative_events=use_negative_events,
+#             rating_based_reward=rating_based_reward,
+#             rating_actions=rating_actions,
+#             reward_top_k=reward_top_k,
         )
