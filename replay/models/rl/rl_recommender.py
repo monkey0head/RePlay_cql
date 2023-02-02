@@ -14,32 +14,14 @@ from tqdm import tqdm
 
 from replay.models.rl.embeddings import random_embeddings, als_embeddings, ddpg_embeddings
 from replay.models.rl.rating_mdp.rating_metrics.metrics import true_ndcg
+from replay.models.rl.rating_mdp.mdp.rating_mdp import negative_reward, mono_reward
 from replay.models.rl.rating_mdp.data_preparing.prepare_data import item_user_pair
 
 
 
-def negative_reward(df, invert = True):
-    reward = df['relevance'].to_numpy().astype(np.int)
-    actions = reward.copy()
-    reward[:] = 1
-    
-    if invert:
-        actions_cp = actions.copy()
-        actions_cp = np.abs(actions_cp - 6)
-        reward_cp = -np.abs(actions - actions_cp)/10
-        reward = np.append(reward, reward_cp)
-        actions = np.append(actions, actions_cp)
-    return reward, actions
-
 class RLRecommender(Recommender):
     top_k: int
     n_epochs: int
-    action_randomization_scale: float
-    use_negative_events: bool
-    rating_based_reward: bool
-    rating_actions: bool
-    reward_top_k: bool
-
     model: LearnableBase
 
     def __init__(
@@ -48,22 +30,14 @@ class RLRecommender(Recommender):
             top_k: int,
             test_log: DataFrame,
             n_epochs: int = 1,
-            action_randomization_scale: float = 0.,
-            use_negative_events: bool = False,
-            rating_based_reward: bool = False,
-            rating_actions: bool = False,
-            reward_top_k: bool = True,
+            reward_function: str
 
     ):
         super().__init__()
         self.model = model
         self.k = top_k
         self.n_epochs = n_epochs
-        self.action_randomization_scale = action_randomization_scale
-        self.use_negative_events = use_negative_events
-        self.rating_based_reward = rating_based_reward
-        self.rating_actions = rating_actions
-        self.reward_top_k = reward_top_k
+        self.reward_function = negative_reward if reward_function=="neg" else mono_reward
         self.mapping_items = None
         self.mapping_users = None
         self.inv_mapp_items = None
@@ -75,8 +49,8 @@ class RLRecommender(Recommender):
         self.observations_test = None
         self.test_log_pd = None
         
+        
     def _idx2obs(self, item_user_array, show_logs = True):
-       # observations = np.array(user_logs[['user_idx', 'item_idx']])
         observations = []
         if show_logs: print("Prepare embedings...")
         out_of_emb_users = 0
@@ -89,14 +63,12 @@ class RLRecommender(Recommender):
             if obs[0] in list(self.mapping_users.keys()):
                 user_emb = self.mapping_users[obs[0]]
             else:
-              #  print(obs[0])
                 out_of_emb_users += 1
                 user_emb = np.random.uniform(0, 1, size=8)
             
             if obs[1] in list(self.mapping_items.keys()):
                 item_emb = self.mapping_items[obs[1]]
             else:
-               # print(obs[1])
                 out_of_emb_items += 1
                 item_emb = np.random.uniform(0, 1, size=8)
             
@@ -143,13 +115,22 @@ class RLRecommender(Recommender):
             self.__make_obs_for_test(users, items)
             
         for user_item_pairs,observation in  zip(self.user_item_pairs, self.observations_test):
-            user_item_pairs['relevance'] = self.model.predict(observation)
-           # print(user_item_pairs['relevance'])
+           # print(observation)
+            #exit()
+            user_item_pairs['relevance'] = [0 if pred <3 else 1 for pred in self.model.predict(observation)]
+          #  user_item_pairs_cp = user_item_pairs.copy()
+           # ones = user_item_pairs['relevance'] >= 3
+           # zeros = user_item_pairs['relevance'] < 3
+           # user_item_pairs_cp[zeros]['relevance'] = 0
+           # user_item_pairs_cp[ones]['relevance'] = 1
+            
+           	#user_item_pairs = user_item_pairs.sort_values(by='relevance', ascending=True)#[:100]
+           # print(user_item_pairs)
+           # exit()
             user_predictions.append(user_item_pairs)
 
         prediction = pd.concat(user_predictions)
-        
-       # print(prediction['relevance'])
+        print(prediction)
         # it doesn't explicitly filter seen items and doesn't return top k items
         # instead, it keeps all predictions as is to be filtered further by base methods
         return DataPreparator.read_as_spark_df(prediction)        
@@ -162,93 +143,50 @@ class RLRecommender(Recommender):
     ) -> None:
         if self.train is None:
             self.train: MDPDataset = self._prepare_data(log)
-            #user_logs = log.toPandas().sort_values(['user_idx', 'timestamp'], ascending=True)
+                
+            # Make scorer for wandb
             if self.test_log_pd is None:
                 self.test_log_pd = self.test_log.toPandas().sort_values(['user_idx', 'timestamp'], ascending=True)
-           # print(self.test_log_pd['relevance'].mean())
-            #exit()
             items_obs_orig = np.unique(self.test_log_pd['item_idx'].values)
             users_obs_orig = np.unique(self.test_log_pd['user_idx'].values)
-            
-            #print(self.mapping_items.keys())
             items_obs = [self.mapping_items[item] for item in items_obs_orig if item in list(self.mapping_items.keys())]
-            users_obs = [self.mapping_users[user] for user in users_obs_orig if user in list(self.mapping_users.keys())]
-            
-            print(len(items_obs),"/", len(items_obs_orig))
-            print(len(users_obs),"/", len(users_obs_orig))
-            
-            
+            users_obs = [self.mapping_users[user] for user in users_obs_orig if user in list(self.mapping_users.keys())]      
             obs_for_pred, users = item_user_pair(items_obs, users_obs)    
             self.scorer = true_ndcg(obs_for_pred, users, self.inv_mapp_items, top_k = 10)
         
         if self.test_log:
-           # print
-            #print("test log: ", self.test_log_pd)
             test_mdp, val_df = self._prepare_data(self.test_log_pd, return_pd_df = True, already_pd = True)
             indx = np.arange(len(val_df))
             np.random.shuffle(indx)
-            #env = FakeRecomenderEnv(val_df.iloc[indx[:10000]], self.k)
-        #evaluate_on_environment(env)
 
         if self.fitter is None:
             self.fitter = 3
             self.fitter = self.model.fitter(
                self.train,
                n_epochs=self.n_epochs,
-#                 n_steps = 2000*self.n_epochs,
-#                n_steps_per_epoch = 2000,
                eval_episodes=test_mdp,
                scorers={'ndcg_sorer': self.scorer}
             )
-            
-           # self.model.fit(self.train, eval_episodes=self.train,n_epochs = 10, scorers={'NDCG': self.scorer})
-
         try:
-        #    print(len(self.user_logs))
-          #  print(len(self.train))
-          ##  print(self.train.observations[0])
-          #  print(self.train.actions)
-          #  print(self.train.rewards)
-           # self.model.fit(self.train, eval_episodes=test_mdp,n_epochs = 100, scorers={'NDCG': self.scorer})
             next(self.fitter)
         except StopIteration:
             pass
 
-    raw_rating_to_reward_rescale = {
-        1.0: -1.0,
-        2.0: -0.3,
-        3.0: 0.25,
-        4.0: 0.7,
-        5.0: 1.0,
-    }
-    binary_rating_to_reward_rescale = {
-        1.0: -1.0,
-        2.0: -1.0,
-        3.0: 1.0,
-        4.0: 1.0,
-        5.0: 1.0,
-    }
 
-
-    def _prepare_data(self, log: DataFrame, return_pd_df = False, already_pd = False) -> MDPDataset:
-        # TODO: consider making calculations in Spark before converting to pandas       
-       
+    def _prepare_data(self, log: DataFrame, return_pd_df = False, 
+                      is_test_run = False, already_pd = False) -> MDPDataset:
+        
+        # TODO: consider making calculations in Spark before converting to pandas  
         if already_pd:
             user_logs = log
         else:
             user_logs = log.toPandas().sort_values(['user_idx', 'timestamp'], ascending=True)
-        print(user_logs)
         if self.mapping_items is None:
             print("! ---- Generate new embedings ---- !")
             self.user_logs = user_logs
-            print(self.user_logs)
             embedings = als_embeddings(user_logs, emb_size = 8)
             self.mapping_users, self.inv_mapp_users, self.mapping_items, self.inv_mapp_items = embedings
 
-        
-       # rewards = user_logs['relevance'].to_numpy().copy()
-      #  rewards[:] = 1
- 
         # every user has his own episode (the latest item is defined as terminal)
         user_terminal_idxs = (
             user_logs[::-1]
@@ -256,15 +194,17 @@ class RLRecommender(Recommender):
             .head(1)
             .index
         )
-        terminals = np.zeros(len(user_logs))
-        terminals[user_terminal_idxs] = 1
-            
-        observations = self._idx2obs(np.array(user_logs[['user_idx', 'item_idx']]))
         
-        if return_pd_df:            
-            rewards, actions = negative_reward(user_logs, False)
+        # Make MDP
+        terminals = np.zeros(len(user_logs))
+        terminals[user_terminal_idxs] = 1            
+        observations = self._idx2obs(np.array(user_logs[['user_idx', 'item_idx']]))   
+        
+        # If it is test run augment observations
+        if not is_test_run:            
+            rewards, actions = self.reward_function(user_logs, invert = False, rating_column='relevance')
         else:
-            rewards, actions = negative_reward(user_logs, True)
+            rewards, actions = self.reward_function(user_logs, invert = True, rating_column='relevance')
             observations = np.append(observations, observations, axis = 0)
             terminals = np.append(terminals, terminals, axis = 0)
         
@@ -274,7 +214,6 @@ class RLRecommender(Recommender):
             rewards=rewards,
             terminals=terminals
         )
-        #print(actions)
         if return_pd_df:
             user_logs['rating'] = actions
             user_logs['rewards'] = rewards
@@ -287,10 +226,7 @@ class RLRecommender(Recommender):
         args = dict(
             top_k=self.top_k,
             n_epochs=self.n_epochs,
-            action_randomization_scale=self.action_randomization_scale,
-            use_negative_events=self.use_negative_events,
-            rating_based_reward=self.rating_based_reward,
-            reward_top_k=self.reward_top_k
+            reward_function = self.reward_function
         )
         args.update(**self.model.get_params())
         return args

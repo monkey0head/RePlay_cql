@@ -15,6 +15,14 @@ def ndcg(k, pred, ground_truth) -> float:
     >>> ndcg(pred, true, 2)
     0.5
     """
+#     print("-----------------------")
+#     a = len(pred)
+#     print(a)
+#     b = len(ground_truth)
+#     print(b)
+#     print(pred)
+#     print(ground_truth)
+#     print("-----------------------")
     pred_len = min(k, len(pred))
     ground_truth_len = min(k, len(ground_truth))
     denom = [1 / math.log2(i + 2) for i in range(k)]
@@ -50,23 +58,42 @@ def true_ndcg(obs_for_pred, users_full, inv_mapp_items, top_k = 10):
                 item_ratings = list(zip(items, predicted_rating))
                 #print(item_ratings)
                 predicted_top_items = sorted(item_ratings, key = lambda item_rat:item_rat[1])[::-1]
-                predicted_top_items = list(zip(*predicted_top_items))[0]
+                # Now it will works only for binary classification
+                try:
+                    sad_items_idx = predicted_top_items.index(2) 
+                except:
+                    sad_items_idx = -1
+                    
+               # print("Sad index 1: ", sad_items_idx)
+                predicted_top_items = list(zip(*predicted_top_items))[0][:sad_items_idx]
                 
                 #find original top items
                 true_user_items = [value[8:] for value in episode.observations]
                 true_item_ratings = episode.rewards.tolist()
-                #print(true_item_ratings)
                 true_item_ratings = list(zip(true_user_items,true_item_ratings))
                 original_top_items = sorted(true_item_ratings, key = lambda item_rat:item_rat[1])[::-1]
-                original_top_items = list(zip(*original_top_items))[0]
-                
-                predicted_to_real = [item_mapping(item) for item in predicted_top_items[:100]]
-                original_to_real = [item_mapping(item) for item in original_top_items[:100]]
-
-                ndcg_user = ndcg(top_k, predicted_to_real, original_to_real)
+                try:
+                    sad_items_idx = original_top_items.index(2) 
+                except:
+                    sad_items_idx = -1
+                #print("Sad index 2: ", sad_items_idx)
+                original_top_items = list(zip(*original_top_items))[0][:sad_items_idx]
+               
+                predicted_to_real = [item_mapping(item) for item in predicted_top_items[:top_k]]
+                original_to_real = [item_mapping(item) for item in original_top_items]
+              #  print(predicted_to_real, original_to_real)
+                if len(predicted_to_real) > 0 and len(original_to_real) > 0:
+                    ndcg_user = ndcg(top_k, predicted_to_real, original_to_real)
+                else:
+                    ndcg_user = 0
                 metrics_ndcg.append(ndcg_user)
             #print(metrics_ndcg)
-            result = np.mean(metrics_ndcg)
-            wandb.log({"NDCG": result})
+            result_median = np.median(metrics_ndcg)
+            result_mean = np.mean(metrics_ndcg)
+            result_std = np.std(metrics_ndcg)
+            wandb.log({"NDCG_median": result_median})
+            wandb.log({"NDCG_mean": result_mean})
+            wandb.log({"NDCG_std": result_std})
+            
             return np.mean(metrics_ndcg)
     return metrics
