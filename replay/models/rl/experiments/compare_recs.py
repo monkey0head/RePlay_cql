@@ -59,7 +59,7 @@ class RatingsDataset:
     def _read_dataset(name: str, category: str):
         if name == 'MovieLens':
             from rs_datasets import MovieLens
-            ds = MovieLens(version=category).ratings
+            ds = MovieLens(version=category).ratings#[:10000]
         elif name == 'Amazon':
             from rs_datasets import Amazon
             ds = Amazon(category=category).ratings
@@ -100,10 +100,7 @@ class RatingsDataset:
 
     def _build_train_test(self, test_ratio: float):
         log = self.log.cache()
-     #   log = log.withColumnRenamed("relevance","rating").cache()
-        
         log = log.withColumn("rating",log["relevance"]).cache()
-      #  df.withColumn("Rate2", df["Rate"])
         # will consider ratings >= 3 as positive feedback and negative otherwise
         binary_log = log.withColumn(
             'relevance',
@@ -111,9 +108,6 @@ class RatingsDataset:
             .when(sf.col('rating') >= sf.lit(3), sf.lit(1.0))
             .otherwise(sf.lit(0.))
         ).cache()
-        
-        
-
         # train/test split
         date_splitter = DateSplitter(
             test_start=test_ratio,
@@ -145,17 +139,18 @@ class RatingsDataset:
         
         train_users = raw_train.select('user_idx').distinct().cache().toPandas()
         test_users = test.select('user_idx').distinct().cache().toPandas()
-       # print(train_users)
-       # print(test_users)
-        count_cold = 0
-        for user in list(test_users.values):
-            #print(user)
-            if user not in list(train_users.values):
-                print(user)
-                count_cold += 1
-                print("Aboba!")
-        print(f"Cold values: {count_cold}/{len(list(test_users.values))}")
-        #count_cold 
+#       Count cold items in TEST
+#        # print(train_users)
+#        # print(test_users)
+#         count_cold = 0
+#         for user in list(test_users.values):
+#             #print(user)
+#             if user not in list(train_users.values):
+#                 print(user)
+#                 count_cold += 1
+#                 print("Aboba!")
+#         print(f"Cold values: {count_cold}/{len(list(test_users.values))}")
+#         #count_cold 
             
 
     def _filter_rares(self, min_k_ratings: int):
@@ -203,11 +198,12 @@ class BareRatingsRunner:
     ks: list[int]
 
     epochs: list[int]
-    action_randomization_scale: float
-    use_negative_events: bool
-    rating_based_reward: bool
-    rating_actions: bool
-    reward_top_k: bool
+    rew: str
+    #action_randomization_scale: float
+   # use_negative_events: bool
+    #rating_based_reward: bool
+    #rating_actions: bool
+    #reward_top_k: bool
 
     logger: logging.Logger
     dataset: RatingsDataset
@@ -220,9 +216,7 @@ class BareRatingsRunner:
             partitions: float, memory: float, gpu: int,
             algorithms: list[str], epochs: list[int], label: str,
             k: Union[int, list[int]], test_ratio: float,
-            action_randomization_scale: float, use_negative_events: bool,
-            rating_based_reward: bool, reward_top_k: bool, rating_actions: bool,
-            seed: int = None, log: bool
+            rew:str,seed: int = None, log: bool
     ):
         self.log = log
         self.logger = logging.getLogger("replay")
@@ -249,12 +243,13 @@ class BareRatingsRunner:
         self.ks = list(sorted(k)) if isinstance(k, list) else [k]
         self.k = self.ks[-1]
         self.epochs = list(sorted(epochs))
-
-        self.action_randomization_scale = action_randomization_scale
-        self.use_negative_events = use_negative_events
-        self.rating_based_reward = rating_based_reward
-        self.rating_actions = rating_actions
-        self.reward_top_k = reward_top_k
+        
+        self.reward_function = rew
+       # self.action_randomization_scale = action_randomization_scale
+      #  self.use_negative_events = use_negative_events
+      #  self.rating_based_reward = rating_based_reward
+       # self.rating_actions = rating_actions
+      #  self.reward_top_k = reward_top_k
 
         self.experiment = self.build_experiment()
         self.print_time('===> Experiment initialized')
@@ -341,11 +336,7 @@ class BareRatingsRunner:
         def build_rl_recommender(ctor, test_log):
             return ctor(
                 top_k=self.k, use_gpu=self.gpu, n_epochs=n_epochs,
-                action_randomization_scale=self.action_randomization_scale,
-                use_negative_events=self.use_negative_events,
-                rating_based_reward=self.rating_based_reward,
-                rating_actions=self.rating_actions,
-                reward_top_k=self.reward_top_k,
+                reward_function = self.reward_function,
                 batch_size=1024, test_log = test_log
             )
 
@@ -456,11 +447,13 @@ def parse_args():
 
     # experiments
     parser.add_argument('--label', dest='label', default=datetime.datetime.now())
-    parser.add_argument('--scale', dest='action_randomization_scale', type=float, default=0.1)
-    parser.add_argument('--neg', dest='use_negative_events', action='store_true', default=False)
-    parser.add_argument('--rat', dest='rating_based_reward', action='store_true', default=False)
-    parser.add_argument('--rat_act', dest='rating_actions', action='store_true', default=False)
-    parser.add_argument('--top', dest='reward_top_k', action='store_true', default=False)
+    parser.add_argument('--rew', dest='rew', default="neg")
+    parser.add_argument('--test_ratio', dest='test_ratio',type=float, default=0.2)
+   # parser.add_argument('--scale', dest='action_randomization_scale', type=float, default=0.1)
+  #  parser.add_argument('--neg', dest='use_negative_events', action='store_true', default=False)
+   # parser.add_argument('--rat', dest='rating_based_reward', action='store_true', default=False)
+  #  parser.add_argument('--rat_act', dest='rating_actions', action='store_true', default=False)
+  #  parser.add_argument('--top', dest='reward_top_k', action='store_true', default=False)
 
     parser.add_argument('--log', dest='log', action='store_true', default=False)
 
@@ -476,8 +469,10 @@ def main():
     os.environ['OMP_NUM_THREADS'] = '1'
 
     args = parse_args()
+    #print(type(args.test_ratio))
+    #exit()
     runner = BareRatingsRunner(
-        k=[1, 5, 10], test_ratio=0.2,
+        k=[1, 5, 10], #test_ratio=args.test_ratio,
         **vars(args)
     )
     runner.run()
