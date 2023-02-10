@@ -10,10 +10,16 @@ cuda_device: ...
 
 top_k: 10
 epochs: 100
-dataset:
-  n_users: 20
-  n_items: 20
-  pairs: 1.0
+dataset_source:
+  seed: ???
+  embeddings_ndims: 10
+  n_users: 100
+  n_items: 100
+  n_pairs: 0.1
+  distance: l1
+  optimism_bias_power: 0.2
+
+dataset: ...
 
 #dataset_preparer:
 #
