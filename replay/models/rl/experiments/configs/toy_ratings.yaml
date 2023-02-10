@@ -1,0 +1,58 @@
+# runner type tag
+_type_: test.toy_ratings
+# wandb project
+project: recsys_toy_ratings
+# wandb logging
+log: True
+
+seed: 42
+cuda_device: ...
+
+top_k: 10
+epochs: 100
+dataset:
+  n_users: 20
+  n_items: 20
+  pairs: 1.0
+
+#dataset_preparer:
+#
+#mdp:
+#  _type_: mdp
+#  use_negative_events: True
+#  rating_based_reward: False
+#  reward_top_k: True
+#  rating_actions: False
+#  action_randomization_scale: 0.01
+#
+#  raw_rating_to_reward_rescale:
+#    1.0: -1.0
+#    2.0: -0.3
+#    3.0: 0.25
+#    4.0: 0.7
+#    5.0: 1.0
+#
+#  binary_rating_to_reward_rescale:
+#    1.0: -1.0
+#    2.0: -1.0
+#    3.0: 1.0
+#    4.0: 1.0
+#    5.0: 1.0
+#
+#dataset_preparers:
+#  split_by: timestamp
+#  train_ratio: 0.8
+#  test_ratio: 0.2
+#
+#
+#datasets:
+#  random:
+#    _type_: ds.random
+#    n_users: ???
+#    n_items: ???
+#    pairs: ???
+#    test_ratio: 0.2
+#  rs_dataset:
+#    _type_: ds.rs_dataset
+#    name: MovieLens.100k
+#    test_ratio: 0.2

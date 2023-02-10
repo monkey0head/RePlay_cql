@@ -6,6 +6,11 @@ from typing import Any
 from replay.models.rl.experiments.utils.config import TKeyPathValue
 
 
+def parse_arg_list(args: list[str]) -> list[TKeyPathValue]:
+    """Parse a list of command line arguments to the list of key-value pairs."""
+    return list(map(parse_arg, args))
+
+
 def parse_arg(arg: str | tuple[str, Any]) -> TKeyPathValue:
     """Parse a single command line argument to the key-value pair."""
     if isinstance(arg, str):
@@ -21,7 +26,7 @@ def parse_arg(arg: str | tuple[str, Any]) -> TKeyPathValue:
         value = parse_str(value)
     else:
         # tuple ("key", value) from wandb config of the sweep single run
-        # we assume that the value is already passed correctly parsed
+        # we assume that the passed value is already correctly parsed
         key_path, value = arg
 
     # parse key tokens as they can represent array indices
@@ -55,6 +60,7 @@ def parse_str(s: str) -> Any:
         except ValueError:
             pass
     return s
+
 
 # [1]: Using sweeps we have a problem with config logging. All parameters provided to
 # a run from the sweep via run args are logged to wandb automatically. At the same time,
