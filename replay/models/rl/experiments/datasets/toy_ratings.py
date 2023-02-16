@@ -7,7 +7,7 @@ from numpy.random import Generator
 def generate_clusters(
         rng: Generator,
         n_clusters: int | list[int],
-        ndims: int = 5,
+        n_dims: int,
         n_dissimilar_dims_required: int = 3,
         min_dim_delta: float = 0.4,
         min_l2_dist: float = 0.1,
@@ -15,7 +15,7 @@ def generate_clusters(
 ):
     n_centers = n_clusters if isinstance(n_clusters, int) else len(n_clusters)
     centers = generate_samples(
-        rng, n_centers, ndims,
+        rng, n_centers, n_dims,
         n_dissimilar_dims_required=n_dissimilar_dims_required,
         min_dim_delta = min_dim_delta,
         min_l2_dist = min_l2_dist,
@@ -28,7 +28,7 @@ def generate_clusters(
     samples = []
     for center, n_samples in zip(centers, n_clusters):
         cluster_samples = generate_samples(
-            rng, n_samples, ndims,
+            rng, n_samples, n_dims,
             n_dissimilar_dims_required=n_dissimilar_dims_required,
             min_dim_delta=min_dim_delta / 2,
             min_l2_dist=min_l2_dist / 2,
@@ -97,7 +97,7 @@ def test():
     samples = generate_clusters(
         np.random.default_rng(seed),
         n_clusters=[2, 3, 4, 1],
-        ndims=5,
+        n_dims=5,
         n_dissimilar_dims_required=1,
         min_dim_delta=0.3,
         min_l2_dist=0.3,

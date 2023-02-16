@@ -1,56 +1,175 @@
 from __future__ import annotations
 
+import logging
 from pathlib import Path
 from typing import TYPE_CHECKING
 
 import numpy as np
 import pandas as pd
+from d3rlpy.dataset import MDPDataset
 from numpy.random import Generator
 
-from replay.models.rl.experiments.utils.config import TConfig, GlobalConfig, resolve_init_params
+from replay.models.rl.experiments.datasets.toy_ratings import generate_clusters
+from replay.models.rl.experiments.utils.config import (
+    TConfig, GlobalConfig, LazyTypeResolver
+)
 from replay.models.rl.experiments.utils.timer import timer, print_with_timestamp
 
 if TYPE_CHECKING:
     from wandb.sdk.wandb_run import Run
 
 
-class ToyRatingsDatasetGenerator:
+class RandomLogGenerator:
     rng: Generator
-    embeddings_ndims: int
     n_users: int
     n_items: int
     n_pairs: int
-    distance: str
-    optimism_bias_power: float
 
+    def __init__(self, seed: int, n_users: int, n_items: int, n_pairs: int | float):
+        self.rng = np.random.default_rng(seed)
+        self.n_users = n_users
+        self.n_items = n_items
+        self.n_pairs = n_pairs if isinstance(n_pairs, int) else int(n_pairs * n_users * n_items)
+
+    def generate(self) -> pd.DataFrame:
+        log_pairs = self.rng.choice(
+            self.n_users * self.n_items,
+            size=self.n_pairs,
+            replace=False
+        )
+        # timestamps denote the order of interactions, this is not the real timestamp
+        timestamps = np.arange(self.n_pairs)
+        log_users, log_items = np.divmod(log_pairs, self.n_items)
+        log = pd.DataFrame({
+            'user_id': log_users,
+            'item_id': log_items,
+            'timestamp': timestamps,
+        })
+        log.sort_values(
+            ['user_id', 'timestamp'],
+            inplace=True,
+            ascending=[True, False]
+        )
+        return log
+
+
+class RandomEmbeddingsGenerator:
+    rng: Generator
+    n_dims: int
+
+    def __init__(self, seed: int, n_dims: int):
+        self.rng = np.random.default_rng(seed)
+        self.n_dims = n_dims
+
+    def generate(self, n: int = None) -> np.ndarray:
+        shape = (n, self.n_dims) if n is not None else (self.n_dims,)
+        return self.rng.uniform(size=shape)
+
+
+class RandomClustersEmbeddingsGenerator:
+    rng: Generator
+    n_dims: int
+    intra_cluster_noise_scale: float
+
+    clusters: np.ndarray
+
+    def __init__(
+            self, seed: int, n_dims: int, n_clusters: int | list[int],
+            intra_cluster_noise_scale: float = 0.05,
+            n_dissimilar_dims_required: int = 3,
+            min_dim_delta: float = 0.3,
+            min_l2_dist: float = 0.1,
+            max_generation_tries: int = 10000
+    ):
+        self.rng = np.random.default_rng(seed)
+        self.n_dims = n_dims
+        self.intra_cluster_noise_scale = intra_cluster_noise_scale
+        self.clusters = generate_clusters(
+            self.rng, n_clusters, n_dims,
+            n_dissimilar_dims_required=n_dissimilar_dims_required,
+            min_dim_delta=min_dim_delta,
+            min_l2_dist=min_l2_dist,
+            max_tries=max_generation_tries,
+        )
+
+    def generate(self, n: int = None) -> np.ndarray:
+        if n is None:
+            return self.generate_one()
+        return np.array([self.generate_one() for _ in range(n)])
+
+    def generate_one(self) -> np.ndarray:
+        cluster = self.rng.choice(self.clusters)
+        embedding = self.rng.normal(
+            loc=cluster, scale=self.intra_cluster_noise_scale, size=(self.n_dims,)
+        )
+        return np.clip(0, 1, embedding)
+
+
+class ToyRatingsGenerator:
+    metric: str
+    positive_ratio: float
+
+    def __init__(self, metric: str, positive_ratio: float):
+        self.metric = metric
+        self.positive_ratio = positive_ratio
+
+    def similarity(self, users: np.ndarray, items: np.ndarray) -> np.ndarray | float:
+        if self.metric == 'l1':
+            d = users - items
+            return 1 - np.abs(d).mean(axis=-1)
+        elif self.metric == 'l2':
+            d = users - items
+            avg_sq_d = (d ** 2).mean(axis=-1)
+            return 1 - np.sqrt(avg_sq_d)
+        elif self.metric == 'cosine':
+            dot_product = np.sum(users * items, axis=-1)
+            users_norm = np.linalg.norm(users, axis=-1)
+            items_norm = np.linalg.norm(items, axis=-1)
+            return dot_product / (users_norm * items_norm)
+
+    def generate(self, users: np.ndarray, items: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
+        similarity = self.similarity(users, items)
+        relevant_threshold = np.quantile(similarity, 1 - self.positive_ratio, interpolation='lower')
+        relevant = similarity >= relevant_threshold
+
+        continuous_ratings = similarity
+        discrete_ratings = relevant
+        return continuous_ratings, discrete_ratings
+
+
+class ToyRatingsDataset:
     log: pd.DataFrame
     user_embeddings: np.ndarray
     item_embeddings: np.ndarray
 
     def __init__(
-            self, seed: int, embeddings_ndims: int, n_users: int, n_items: int,
-            n_pairs: int | float, distance: str, optimism_bias_power: float = 1.0
+            self, global_config: GlobalConfig, source: TConfig,
+            embeddings_n_dims: int, user_embeddings: TConfig, item_embeddings: TConfig,
+            ratings: TConfig
     ):
-        self.rng = np.random.default_rng(seed)
-        self.embeddings_ndims = embeddings_ndims
-        self.n_users = n_users
-        self.n_items = n_items
-        self.n_pairs = n_pairs if isinstance(n_pairs, int) else int(n_pairs * n_users * n_items)
-        self.distance = distance
-        self.optimism_bias_power = optimism_bias_power
+        self.global_config = global_config
+        self.source = global_config.resolve_object(source)
+        self.embeddings_n_dims = embeddings_n_dims
+
+        user_embeddings_generator = global_config.resolve_object(
+            user_embeddings, n_dims=embeddings_n_dims
+        )
+        self.user_embeddings = user_embeddings_generator.generate(self.source.n_users)
+
+        item_embeddings_generator = global_config.resolve_object(
+            item_embeddings, n_dims=embeddings_n_dims
+        )
+        self.item_embeddings = item_embeddings_generator.generate(self.source.n_items)
+
+        self.ratings = ToyRatingsGenerator(**ratings)
 
     def generate(self):
-        self.generate_log()
-        self.generate_embeddings()
-        self.generate_ratings()
-
-    def generate_embeddings(self):
-        self.user_embeddings = np.clip(
-            0, 1, self.rng.uniform(size=(self.n_users, self.embeddings_ndims))
+        self.log = self.source.generate()
+        continuous_ratings, discrete_ratings = self.ratings.generate(
+            self.log_user_embeddings, self.log_item_embeddings
         )
-        self.item_embeddings = np.clip(
-            0, 1, self.rng.uniform(size=(self.n_items, self.embeddings_ndims))
-        )
+        self.log['continuous_rating'] = continuous_ratings
+        self.log['discrete_rating'] = discrete_ratings
 
     @property
     def log_user_embeddings(self):
@@ -60,40 +179,64 @@ class ToyRatingsDatasetGenerator:
     def log_item_embeddings(self):
         return self.item_embeddings[self.log['item_id']]
 
-    def similarity(self, users: np.ndarray, items: np.ndarray) -> np.ndarray | float:
-        if self.distance == 'l1':
-            d = users - items
-            return 1 - np.abs(d).mean(axis=-1)
-        elif self.distance == 'l2':
-            d = users - items
-            avg_sq_d = (d ** 2).mean(axis=-1)
-            return 1 - np.sqrt(avg_sq_d)
-        elif self.distance == 'cosine':
-            dot_product = np.sum(users * items, axis=-1)
-            users_norm = np.linalg.norm(users, axis=-1)
-            items_norm = np.linalg.norm(items, axis=-1)
-            return dot_product / (users_norm * items_norm)
+    @property
+    def log_continuous_ratings(self):
+        return self.log['continuous_rating']
 
-    def generate_ratings(self):
-        like_prob = self.similarity(self.log_user_embeddings, self.log_item_embeddings)
-        # if optimism_bias_power > 1, then the user is more likely to like the item
-        like_prob = like_prob ** (1.0 / self.optimism_bias_power)
+    @property
+    def log_discrete_ratings(self):
+        return self.log['discrete_rating']
 
-        self.log['rating'] = self.rng.binomial(1, like_prob).flatten()
 
-    def generate_log(self):
-        train_pairs = self.rng.choice(
-            self.n_users * self.n_items,
-            size=self.n_pairs,
-            replace=False
+class MdpDatasetBuilder:
+    actions: str
+    rewards: dict
+
+    def __init__(self, actions: str, rewards: dict):
+        self.actions = actions
+        self.rewards = rewards
+
+    def build(self, ds):
+        observations = np.concatenate((ds.log_user_embeddings, ds.log_item_embeddings), axis=-1)
+        actions = self._get_actions(ds)
+        rewards = self._get_rewards(ds)
+        terminals = self._get_terminals(ds)
+
+        return MDPDataset(
+            observations=observations,
+            actions=np.expand_dims(actions, axis=-1),
+            rewards=rewards,
+            terminals=terminals,
         )
-        log_users, log_items = np.divmod(train_pairs, self.n_items)
-        timestamps = np.arange(self.n_pairs)
-        self.log = pd.DataFrame({
-            'user_id': log_users,
-            'item_id': log_items,
-            'timestamp': timestamps,
-        })
+
+    def _get_rewards(self, ds):
+        rewards = np.zeros(ds.log.shape[0])
+        for name, value in self.rewards.items():
+            if name == 'baseline':
+                baseline: float = value
+                rewards += np.full_like(rewards, baseline)
+            elif name == 'continuous':
+                weight: float = value
+                rewards += ds.log_continuous_ratings.values * weight
+            elif name == 'discrete':
+                weights = np.array(value)
+                rewards = weights[ds.log_discrete_ratings.values.astype(int)]
+        return rewards
+
+    def _get_actions(self, ds):
+        if self.actions == 'continuous':
+            return ds.log_continuous_ratings.values
+        elif self.actions == 'discrete':
+            return ds.log_discrete_ratings.values
+        else:
+            raise ValueError(f'Unknown actions type: {self.actions}')
+
+    @staticmethod
+    def _get_terminals(ds):
+        terminals = np.zeros(ds.log.shape[0])
+        terminals[1:] = ds.log['user_id'].values[1:] != ds.log['user_id'].values[:-1]
+        terminals[-1] = True
+        return terminals
 
 
 class ToyRatingsExperiment:
@@ -108,13 +251,14 @@ class ToyRatingsExperiment:
 
     def __init__(
             self, config: TConfig, config_path: Path, seed: int,
-            top_k: int, epochs: int, dataset_source: TConfig,
+            top_k: int, epochs: int, dataset: TConfig, mdp: TConfig,
             cuda_device: bool | int | None,
             **_
     ):
         self.config = GlobalConfig(
-            config=config, config_path=config_path, type_resolver=None
+            config=config, config_path=config_path, type_resolver=TypesResolver()
         )
+
         self.init_time = timer()
         self.print_with_timestamp('==> Init')
 
@@ -126,18 +270,47 @@ class ToyRatingsExperiment:
         self.top_k = top_k
         self.epochs = epochs
 
-        dataset_source = resolve_init_params(dataset_source, seed=self.seed)
-        self.dataset_generator = ToyRatingsDatasetGenerator(**dataset_source)
-        self.dataset_generator.generate()
-        print(len(self.dataset_generator.log))
-        print(self.dataset_generator.log['rating'].sum() / self.dataset_generator.n_pairs)
-        # with np.printoptions(precision=1):
-        #     print(self.dataset_generator.user_embeddings)
-        #     print(self.dataset_generator.item_embeddings)
+        self.dataset = self.config.resolve_object(dataset)
+        self.dataset.generate()
+        self.train_mdp = MdpDatasetBuilder(**mdp).build(self.dataset)
 
     def run(self):
+        logging.disable(logging.DEBUG)
+
         self.print_with_timestamp('==> Run')
+        from d3rlpy.algos import CQL
+        cql = CQL(
+            use_gpu=False, batch_size=16,
+            # actor_learning_rate=1e-3, critic_learning_rate=3e-3,
+        )
+        fitter = cql.fitter(
+            self.train_mdp,
+            n_epochs=self.epochs, verbose=False,
+            save_metrics=False, show_progress=False,
+        )
+        for epoch, metrics in fitter:
+            if epoch == 1 or epoch % 10 == 0:
+                self._eval_and_print(cql, epoch)
+
         self.print_with_timestamp('<==')
+
+    def _eval_and_print(self, model, epoch):
+        train_prediction = model.predict(self.train_mdp.observations)
+        train_loss = np.mean(np.abs(train_prediction - self.train_mdp.actions))
+        self.print_with_timestamp(f'Epoch {epoch}: train loss = {train_loss:.4f}')
 
     def print_with_timestamp(self, text: str):
         print_with_timestamp(text, self.init_time)
+
+
+class TypesResolver(LazyTypeResolver):
+    def resolve(self, type_name: str, **kwargs):
+        if type_name == 'dataset.toy_ratings':
+            return ToyRatingsDataset
+        if type_name == 'ds_source.random':
+            return RandomLogGenerator
+        if type_name == 'embeddings.random':
+            return RandomEmbeddingsGenerator
+        if type_name == 'embeddings.clusters':
+            return RandomClustersEmbeddingsGenerator
+        raise ValueError(f'Unknown type: {type_name}')
