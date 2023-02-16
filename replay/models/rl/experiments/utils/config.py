@@ -437,6 +437,8 @@ class GlobalConfig:
     type_resolver: TTypeResolver
     object_resolver: ObjectResolver
 
+    global_substitution_registry: dict
+
     def __init__(self, config: TConfig, config_path: Path, type_resolver: TTypeResolver):
         self.config = config
         self.config_path = config_path
@@ -447,6 +449,10 @@ class GlobalConfig:
         self.type_resolver = type_resolver
         self.object_resolver = ObjectResolver(
             type_resolver=type_resolver, config_resolver=self.config_resolver
+        )
+        self.global_substitution_registry = dict(
+            global_config=self,
+            seed=self.config['seed'],
         )
 
     def resolve_object(
@@ -459,7 +465,6 @@ class GlobalConfig:
             config,
             object_type_or_factory=object_type_or_factory,
             config_type=config_type,
-            global_config=self,
-            **substitution_registry
+            **substitution_registry | self.global_substitution_registry
         )
 
