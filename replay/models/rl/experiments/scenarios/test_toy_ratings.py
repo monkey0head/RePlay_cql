@@ -388,8 +388,7 @@ class ToyRatingsExperiment:
     def _eval_and_log(self, model, epoch):
         batch_size = model.batch_size
         n_splits = self.test_mdp.observations.shape[0] // batch_size
-
-        test_prediction = np.vstack([
+        test_prediction = np.concatenate([
             model.predict(batch)
             for batch in np.array_split(self.test_mdp.observations, n_splits)
         ])
