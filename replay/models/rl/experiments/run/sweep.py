@@ -41,6 +41,7 @@ def run_sweep(
 
     # parse sweep run args, extract run config path, read run config
     run_config_path = _extract_config_filepath(run_arg_parser, run_command)
+    run_config_path = Path.joinpath(sweep_run_params.config_path.parent, run_config_path)
     run_config = read_config(run_config_path)
 
     # construct run params shared between all agents (we will construct individual ones later)
