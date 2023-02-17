@@ -12,30 +12,30 @@ parameters:
     value: 100
   eval_schedule.:
     value: 5
-  model._base_.:
+  model.._base_:
     value: models.cql
 
-  dataset.source.n_users:
+  dataset..source.n_users:
     value: 40
-  dataset.source.n_items:
+  dataset..source.n_items:
     values:
       - 40
       - 80
       - 150
-  dataset.embeddings_n_dims:
+  dataset..embeddings_n_dims:
     values:
       - 7
       - 12
-  dataset.ratings.positive_ratio:
+  dataset..ratings.positive_ratio:
     values:
       - 0.05
       - 0.1
       - 0.2
-  dataset.user_embeddings._base_:
+  dataset..user_embeddings._base_:
     values:
       - embeddings.random
       - embeddings.clusters
-  train_test_split.train:
+  train_test_split..train:
     values:
       - 0.1
       - 0.25
