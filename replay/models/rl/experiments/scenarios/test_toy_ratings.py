@@ -366,8 +366,7 @@ class ToyRatingsExperiment:
             item_embeddings=train_dataset.item_embeddings,
         ))
         self.model = self.config.resolve_object(
-            model,
-            use_gpu=get_cuda_device(cuda_device)
+            model | dict(use_gpu=get_cuda_device(cuda_device))
         )
 
     def run(self):
@@ -387,7 +386,13 @@ class ToyRatingsExperiment:
         self.print_with_timestamp('<==')
 
     def _eval_and_log(self, model, epoch):
-        test_prediction = model.predict(self.test_mdp.observations)
+        batch_size = model.batch_size
+        n_splits = self.test_mdp.observations.shape[0] // batch_size
+
+        test_prediction = np.vstack([
+            model.predict(batch)
+            for batch in np.array_split(self.test_mdp.observations, n_splits)
+        ])
         test_loss = np.mean(np.abs(test_prediction - self.test_mdp.actions))
         self.print_with_timestamp(f'Epoch {epoch}: test loss = {test_loss:.4f}')
         if self.logger:
