@@ -1,3 +1,4 @@
+import os
 from typing import Optional
 
 import numpy as np
@@ -48,6 +49,7 @@ class RLRecommender(Recommender):
         self.user_item_pairs = None
         self.observations_test = None
         self.test_log_pd = None
+        self.iteration = 0
         
         
     def _idx2obs(self, item_user_array, show_logs = True):
@@ -117,7 +119,7 @@ class RLRecommender(Recommender):
         for user_item_pairs,observation in  zip(self.user_item_pairs, self.observations_test):
            # print(observation)
             #exit()
-            user_item_pairs['relevance'] = [0 if pred <3 else 1 for pred in self.model.predict(observation)]
+            user_item_pairs['relevance'] = [0 if pred < 4 else 1 for pred in self.model.predict(observation)]
           #  user_item_pairs_cp = user_item_pairs.copy()
            # ones = user_item_pairs['relevance'] >= 3
            # zeros = user_item_pairs['relevance'] < 3
@@ -130,6 +132,9 @@ class RLRecommender(Recommender):
             user_predictions.append(user_item_pairs)
 
         prediction = pd.concat(user_predictions)
+        os.makedirs("./prediction_logs", exist_ok=True)
+        self.iteration+=1
+        prediction.to_csv(f'prediction_logs/prediction_{self.iteration}.csv')
         print(prediction)
         # it doesn't explicitly filter seen items and doesn't return top k items
         # instead, it keeps all predictions as is to be filtered further by base methods

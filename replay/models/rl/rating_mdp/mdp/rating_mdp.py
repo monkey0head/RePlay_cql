@@ -25,8 +25,8 @@ def negative_reward(df, invert = False,  rating_column = 'rating'):
     actions = reward.copy()
     #actions = np.zeros_like(reward)
    # actions[reward >= 3] = 1
-    reward[:] = 1
-    reward[actions<3] = 3
+    reward[:] = 0.0
+    reward[actions<3] = 2
     
     if invert:
         actions_cp = actions.copy()
@@ -47,6 +47,8 @@ def negative_reward_scaled(df, invert = True,  rating_column = 'rating'):
         actions_cp = actions.copy()
         actions_cp = np.abs(actions_cp - 6)
         reward_cp = -np.abs(actions - actions_cp)/5
+        print(reward_cp)
+        exit()
         reward = np.append(reward[:len(reward)//2], reward_cp[len(reward)//2:])
         actions = np.append(actions[:len(actions)//2], actions_cp[len(actions)//2:])
     return reward, actions
