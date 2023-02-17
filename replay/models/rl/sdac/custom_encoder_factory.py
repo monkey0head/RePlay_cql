@@ -1,4 +1,5 @@
 import d3rlpy
+from d3rlpy.models.encoders import register_encoder_factory
 from d3rlpy.models.torch import VectorEncoder
 
 from replay.models.rl.sdac.vector_encoder_w_action import VectorEncoderWithAction
@@ -20,3 +21,6 @@ class CustomEncoderFactory(d3rlpy.models.encoders.EncoderFactory):
 
     def get_params(self, deep=False):
         return {"feature_size": self.feature_size}
+
+
+register_encoder_factory(CustomEncoderFactory)
