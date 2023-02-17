@@ -58,6 +58,7 @@ def run_sweep(
             kwargs={
                 'sweep_id': sweep_id,
                 'function': partial(_wandb_agent_entry_point, run_params=run_params),
+                'project': wandb_project,
             }
         )
         for _ in range(n_agents)
