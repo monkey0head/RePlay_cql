@@ -342,7 +342,6 @@ class ToyRatingsExperiment:
         self.init_time = timer()
         self.print_with_timestamp('==> Init')
 
-        self.cuda_device = get_cuda_device(cuda_device)
         self.seed = seed
         self.top_k = top_k
         self.epochs = epochs
@@ -366,7 +365,10 @@ class ToyRatingsExperiment:
             user_embeddings=train_dataset.user_embeddings,
             item_embeddings=train_dataset.item_embeddings,
         ))
-        self.model = self.config.resolve_object(model)
+        self.model = self.config.resolve_object(
+            model,
+            use_gpu=get_cuda_device(cuda_device)
+        )
 
     def run(self):
         logging.disable(logging.DEBUG)
@@ -439,7 +441,7 @@ def get_cuda_device(cuda_device: int | None) -> int | bool:
     if cuda_device is not None:
         import torch.cuda
         cuda_available = torch.cuda.is_available()
-        print(f'CUDA available: {cuda_available}')
+        print(f'CUDA available: {cuda_available}; device: {cuda_device}')
         if not cuda_available:
             cuda_device = False
     return cuda_device
