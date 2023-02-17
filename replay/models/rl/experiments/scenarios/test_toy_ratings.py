@@ -329,8 +329,9 @@ class ToyRatingsExperiment:
             self, config: TConfig, config_path: Path, seed: int,
             top_k: int, epochs: int, dataset: TConfig, mdp: TConfig, model: TConfig,
             train_test_split: TConfig, augmentations: TConfig,
-            log: bool, project: str, eval_schedule: int,
+            log: bool, eval_schedule: int,
             cuda_device: bool | int | None,
+            project: str = None,
             **_
     ):
         self.config = GlobalConfig(
