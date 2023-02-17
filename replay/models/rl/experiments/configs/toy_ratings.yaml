@@ -9,7 +9,7 @@ seed: 42
 cuda_device: ...
 
 top_k: 10
-epochs: 100
+epochs: 200
 
 dataset:
   _type_: dataset.toy_ratings
@@ -18,12 +18,12 @@ dataset:
   source:
     _type_: ds_source.random
     seed: ???
-    n_users: 20
-    n_items: 20
-    n_pairs: 1.0
+    n_users: 100
+    n_items: 100
+    n_pairs: 0.2
     duplicates: False
 
-  embeddings_n_dims: 5
+  embeddings_n_dims: 7
   user_embeddings:
     _base_: embeddings.clusters
   item_embeddings:
@@ -38,7 +38,7 @@ augmentations:
 
 train_test_split:
   split_by: user
-  train: 0.4
+  train: 0.25
 
 mdp:
   actions: continuous
@@ -53,16 +53,16 @@ model:
   _base_: models.cql
   actor_learning_rate: 1e-3
   critic_learning_rate: 3e-3
-  batch_size: 16
+  batch_size: 32
 
-eval_schedule: 5
+eval_schedule: 10
 
 models:
   default:
     actor_learning_rate: 1e-4
     critic_learning_rate: 3e-4
-    temp_learning_rate: 1e-4
-    alpha_learning_rate: 1e-4
+    temp_learning_rate: 1e-4  #?
+    alpha_learning_rate: 1e-4 # ?
     q_func_factory: "mean"
     batch_size: 256
     n_frames: 1
@@ -70,18 +70,33 @@ models:
     gamma: 0.99
     tau: 0.005
     n_critics: 2
-    initial_temperature: 1.0
-    initial_alpha: 1.0
-    alpha_threshold: 10.0
-    conservative_weight: 5.0
-    n_action_samples: 10
-    soft_q_backup: False
+    initial_temperature: 1.0  #?
+    initial_alpha: 1.0  #?
+    alpha_threshold: 10.0 # ?
+    conservative_weight: 5.0 # ?
+    n_action_samples: 10  #?
+    soft_q_backup: False  #?
   cql:
     _type_: d3rlpy.cql
     _base_: default
+    actor_learning_rate: 1e-3
+    critic_learning_rate: 3e-3
+    temp_learning_rate: 1e-4
+    alpha_learning_rate: 1e-4
+    alpha_threshold: 10.0
+    conservative_weight: 5.0
+    initial_temperature: 1.0
+    initial_alpha: 1.0
+    n_action_samples: 10
+    soft_q_backup: False
   sac:
     _type_: d3rlpy.sac
     _base_: default
+  ddpg:
+    _type_: d3rlpy.ddpg
+    _base_: default
+    temp_learning_rate: 1e-4
+    initial_temperature: 1.0
   discrete_cql:
     _type_: d3rlpy.discrete_cql
     _base_: default

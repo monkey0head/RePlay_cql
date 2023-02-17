@@ -428,6 +428,9 @@ class TypesResolver(LazyTypeResolver):
         if type_name == 'd3rlpy.sac':
             from d3rlpy.algos import SAC
             return SAC
+        if type_name == 'd3rlpy.ddpg':
+            from d3rlpy.algos import DDPG
+            return DDPG
         if type_name == 'd3rlpy.discrete_cql':
             from d3rlpy.algos import DiscreteCQL
             return DiscreteCQL
