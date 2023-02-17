@@ -14,12 +14,14 @@ epochs: 100
 dataset:
   _type_: dataset.toy_ratings
   global_config: ???
+  seed: ???
   source:
     _type_: ds_source.random
     seed: ???
     n_users: 20
     n_items: 20
-    n_pairs: 0.5
+    n_pairs: 1.0
+    duplicates: False
 
   embeddings_n_dims: 5
   user_embeddings:
@@ -31,12 +33,64 @@ dataset:
     metric: l1
     positive_ratio: 0.1
 
+augmentations:
+  n_pairs: 0.0
+
+train_test_split:
+  split_by: user
+  train: 0.4
+
 mdp:
   actions: continuous
   rewards:
-    baseline: 0.0
+    baseline: [0.0, 0.0]
     continuous: 0.5
     discrete: [0.5, 0.5]
+    continuous_error: 0.5
+    discrete_error: 0.5
+
+model:
+  _base_: models.cql
+  actor_learning_rate: 1e-3
+  critic_learning_rate: 3e-3
+  batch_size: 16
+
+eval_schedule: 5
+
+models:
+  default:
+    actor_learning_rate: 1e-4
+    critic_learning_rate: 3e-4
+    temp_learning_rate: 1e-4
+    alpha_learning_rate: 1e-4
+    q_func_factory: "mean"
+    batch_size: 256
+    n_frames: 1
+    n_steps: 1
+    gamma: 0.99
+    tau: 0.005
+    n_critics: 2
+    initial_temperature: 1.0
+    initial_alpha: 1.0
+    alpha_threshold: 10.0
+    conservative_weight: 5.0
+    n_action_samples: 10
+    soft_q_backup: False
+  cql:
+    _type_: d3rlpy.cql
+    _base_: default
+  sac:
+    _type_: d3rlpy.sac
+    _base_: default
+  discrete_cql:
+    _type_: d3rlpy.discrete_cql
+    _base_: default
+  sdac:
+    _type_: d3rlpy.sdac
+    _base_: default
+  discrete_sac:
+    _type_: d3rlpy.discrete_sac
+    _base_: default
 
 
 embeddings:
