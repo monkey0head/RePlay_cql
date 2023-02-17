@@ -383,8 +383,6 @@ class ToyRatingsExperiment:
         for epoch, metrics in fitter:
             if epoch == 1 or epoch % self.eval_schedule == 0:
                 self._eval_and_log(self.model, epoch)
-            elif self.logger:
-                self.logger.log({'epoch': epoch})
 
         self.print_with_timestamp('<==')
 
