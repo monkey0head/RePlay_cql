@@ -4,6 +4,8 @@ from functools import partial
 from multiprocessing import Process
 from pathlib import Path
 
+import wandb
+
 from replay.models.rl.experiments.run.argparse import parse_arg_list
 from replay.models.rl.experiments.run.entrypoint import RunParams, run_single_run_experiment
 from replay.models.rl.experiments.run.wandb import (
@@ -11,9 +13,6 @@ from replay.models.rl.experiments.run.wandb import (
     turn_off_gui_for_matplotlib
 )
 from replay.models.rl.experiments.utils.config import extracted, read_config
-from replay.models.rl.experiments.utils.lazy_imports import lazy_import
-
-wandb = lazy_import('wandb')
 
 
 def run_sweep(
