@@ -14,7 +14,7 @@ def generate_clusters(
         max_tries: int = 10000,
 ):
     n_centers = n_clusters if isinstance(n_clusters, int) else len(n_clusters)
-    centers = generate_samples(
+    centers = _generate_distant_samples(
         rng, n_centers, n_dims,
         n_dissimilar_dims_required=n_dissimilar_dims_required,
         min_dim_delta=min_dim_delta,
@@ -27,7 +27,7 @@ def generate_clusters(
 
     samples = []
     for center, n_samples in zip(centers, n_clusters):
-        cluster_samples = generate_samples(
+        cluster_samples = _generate_distant_samples(
             rng, n_samples, n_dims,
             n_dissimilar_dims_required=n_dissimilar_dims_required,
             min_dim_delta=min_dim_delta / 2,
@@ -43,7 +43,7 @@ def generate_clusters(
     return samples
 
 
-def generate_samples(
+def _generate_distant_samples(
         rng: Generator,
         n_samples: int,
         ndims: int,
@@ -56,13 +56,13 @@ def generate_samples(
 ):
     for _ in range(max_tries):
         samples = rng.uniform(size=(n_samples, ndims))
-        if check_similarity(samples, min_dim_delta, n_dissimilar_dims_required, min_l2_dist):
-            return shift_rescale(samples, w, center)
+        if _check_dissimilarity(samples, min_dim_delta, n_dissimilar_dims_required, min_l2_dist):
+            return _shift_rescale(samples, w, center)
 
     raise RuntimeError(f'Could not generate samples in {max_tries} tries')
 
 
-def check_similarity(samples, min_dim_delta, n_dissimilar_dims_required, min_l2_dist):
+def _check_dissimilarity(samples, min_dim_delta, n_dissimilar_dims_required, min_l2_dist):
     for i in range(samples.shape[0] - 1):
         # (right tail size, ndims)
         diff_with_tail = np.abs(samples[i + 1:] - samples[i])
@@ -83,16 +83,16 @@ def check_similarity(samples, min_dim_delta, n_dissimilar_dims_required, min_l2_
     return True
 
 
-def shift_rescale(samples, w, center, from_w=1.0, from_center=0.5):
+def _shift_rescale(samples, w, center, from_w=1.0, from_center=0.5):
     unit_cube_samples = (samples - from_center) / from_w
     return unit_cube_samples * w + center
 
 
-def sort_lexicographically(arr):
+def _sort_lexicographically(arr):
     return arr[np.lexsort(np.fliplr(arr).T)]
 
 
-def test():
+def _test():
     seed = 123
     samples = generate_clusters(
         np.random.default_rng(seed),
@@ -104,7 +104,7 @@ def test():
         max_tries=100000
     )
 
-    samples = sort_lexicographically(samples)
+    samples = _sort_lexicographically(samples)
     with np.printoptions(precision=1):
         print(samples)
 
@@ -119,4 +119,4 @@ def test():
 
 
 if __name__ == '__main__':
-    test()
+    _test()
