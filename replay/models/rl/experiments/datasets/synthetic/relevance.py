@@ -25,6 +25,7 @@ class RelevanceCalculator:
             users_norm = np.linalg.norm(users, axis=-1)
             items_norm = np.linalg.norm(items, axis=-1)
             return dot_product / (users_norm * items_norm)
+        raise ValueError(f'Unknown similarity metric: {self.metric}')
 
     def calculate(self, users: np.ndarray, items: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
         similarity = self.similarity(users, items)
