@@ -17,8 +17,8 @@ def generate_clusters(
     centers = generate_samples(
         rng, n_centers, n_dims,
         n_dissimilar_dims_required=n_dissimilar_dims_required,
-        min_dim_delta = min_dim_delta,
-        min_l2_dist = min_l2_dist,
+        min_dim_delta=min_dim_delta,
+        min_l2_dist=min_l2_dist,
         max_tries=max_tries
     )
 

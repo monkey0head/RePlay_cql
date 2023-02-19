@@ -9,8 +9,15 @@ import numpy as np
 import pandas as pd
 from d3rlpy.dataset import MDPDataset
 from numpy.random import Generator
+from replay.models.rl.experiments.datasets.synthetic.relevance import (
+    RelevanceCalculator
+)
+from replay.models.rl.experiments.datasets.synthetic.embeddings import (
+    RandomEmbeddingsGenerator,
+    RandomClustersEmbeddingsGenerator
+)
+from replay.models.rl.experiments.datasets.synthetic.log import RandomLogGenerator
 
-from replay.models.rl.experiments.datasets.toy_ratings import generate_clusters
 from replay.models.rl.experiments.run.wandb import get_logger
 from replay.models.rl.experiments.utils.config import (
     TConfig, GlobalConfig, LazyTypeResolver
@@ -19,138 +26,6 @@ from replay.models.rl.experiments.utils.timer import timer, print_with_timestamp
 
 if TYPE_CHECKING:
     from wandb.sdk.wandb_run import Run
-
-
-class RandomLogGenerator:
-    rng: Generator
-    n_users: int
-    n_items: int
-    n_pairs: int
-
-    def __init__(
-            self, seed: int, n_users: int, n_items: int, n_pairs: int | float,
-            duplicates: bool = False
-    ):
-        self.rng = np.random.default_rng(seed)
-        self.n_users = n_users
-        self.n_items = n_items
-        self.n_pairs = self._to_pairs(n_pairs)
-        self.duplicates = duplicates
-
-    def generate(self, n_pairs: int | float = None, duplicates: bool = None) -> pd.DataFrame:
-        n_pairs = self._to_pairs(n_pairs) if n_pairs is not None else self.n_pairs
-        duplicates = duplicates if duplicates is not None else self.duplicates
-
-        log_pairs = self.rng.choice(
-            self.n_users * self.n_items,
-            size=n_pairs,
-            replace=duplicates
-        )
-        # timestamps denote the order of interactions, this is not the real timestamp
-        timestamps = self.rng.uniform(size=n_pairs)
-        log_users, log_items = np.divmod(log_pairs, self.n_items)
-        log = pd.DataFrame({
-            'user_id': log_users,
-            'item_id': log_items,
-            'timestamp': timestamps,
-        })
-        log.sort_values(
-            ['user_id', 'timestamp'],
-            inplace=True,
-            ascending=[True, False]
-        )
-        return log
-
-    def _to_pairs(self, n_pairs: int | float):
-        return n_pairs if isinstance(n_pairs, int) else int(n_pairs * self.n_users * self.n_items)
-
-
-class RandomEmbeddingsGenerator:
-    rng: Generator
-    n_dims: int
-
-    def __init__(self, seed: int, n_dims: int):
-        self.rng = np.random.default_rng(seed)
-        self.n_dims = n_dims
-
-    def generate(self, n: int = None) -> np.ndarray:
-        shape = (n, self.n_dims) if n is not None else (self.n_dims,)
-        return self.rng.uniform(size=shape)
-
-
-class RandomClustersEmbeddingsGenerator:
-    rng: Generator
-    n_dims: int
-    intra_cluster_noise_scale: float
-
-    clusters: np.ndarray
-
-    def __init__(
-            self, seed: int, n_dims: int, n_clusters: int | list[int],
-            intra_cluster_noise_scale: float = 0.05,
-            n_dissimilar_dims_required: int = 3,
-            min_dim_delta: float = 0.3,
-            min_l2_dist: float = 0.1,
-            max_generation_tries: int = 10000
-    ):
-        self.rng = np.random.default_rng(seed)
-        self.n_dims = n_dims
-        self.intra_cluster_noise_scale = intra_cluster_noise_scale
-        self.clusters = generate_clusters(
-            self.rng, n_clusters, n_dims,
-            n_dissimilar_dims_required=n_dissimilar_dims_required,
-            min_dim_delta=min_dim_delta,
-            min_l2_dist=min_l2_dist,
-            max_tries=max_generation_tries,
-        )
-
-    def generate(self, n: int = None) -> np.ndarray:
-        if n is None:
-            return self.generate_one()
-        return np.array([self.generate_one() for _ in range(n)])
-
-    def generate_one(self) -> np.ndarray:
-        cluster = self.rng.choice(self.clusters)
-        embedding = self.rng.normal(
-            loc=cluster, scale=self.intra_cluster_noise_scale, size=(self.n_dims,)
-        )
-        return np.clip(0, 1, embedding)
-
-
-class RelevanceCalculator:
-    metric: str
-    positive_ratio: float
-
-    def __init__(self, metric: str, positive_ratio: float):
-        self.metric = metric
-        self.positive_ratio = positive_ratio
-        self.relevant_threshold = None
-
-    def similarity(self, users: np.ndarray, items: np.ndarray) -> np.ndarray | float:
-        if self.metric == 'l1':
-            d = users - items
-            return 1 - np.abs(d).mean(axis=-1)
-        elif self.metric == 'l2':
-            d = users - items
-            avg_sq_d = (d ** 2).mean(axis=-1)
-            return 1 - np.sqrt(avg_sq_d)
-        elif self.metric == 'cosine':
-            dot_product = np.sum(users * items, axis=-1)
-            users_norm = np.linalg.norm(users, axis=-1)
-            items_norm = np.linalg.norm(items, axis=-1)
-            return dot_product / (users_norm * items_norm)
-
-    def calculate(self, users: np.ndarray, items: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
-        similarity = self.similarity(users, items)
-        if self.relevant_threshold is None:
-            self.relevant_threshold = np.quantile(
-                similarity, 1 - self.positive_ratio, interpolation='lower'
-            )
-        relevant = similarity >= self.relevant_threshold
-
-        continuous_relevance = similarity
-        discrete_relevance = relevant.astype(int)
-        return continuous_relevance, discrete_relevance
 
 
 @dataclasses.dataclass
