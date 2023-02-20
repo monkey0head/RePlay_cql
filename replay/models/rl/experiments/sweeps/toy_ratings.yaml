@@ -5,7 +5,7 @@ project: recsys_toy_ratings
 method: grid
 parameters:
   seed.:
-    values: [40, 41, 42, 43, 44, 45, 46] #, 47, 48, 49] #, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59]
+    values: [40, 41, 42, 43, 44] #, 45, 46] #, 47, 48, 49] #, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59]
   cuda_device.:
     value: True
   epochs.:
@@ -37,6 +37,39 @@ parameters:
 #    values:
 #      - embeddings.random
 #      - embeddings.clusters
+
+#  model.._base_:
+#    values:
+#      - models.cql
+#      - models.sac
+#      - models.ddpg
+
+  augmentations..n_pairs:
+    values:
+      - 0.02
+      - 0.05
+      - 0.1
+  mdp..rewards.baseline:
+    values:
+      - [0.0, 0.0]
+      - [-0.1, 0.0]
+  mdp..rewards.continuous:
+    values:
+      - 0.0
+      - 0.5
+  mdp..rewards.discrete:
+    values:
+      - [0.0, 0.0]
+      - [0.0, 0.5]
+      - [0.5, 0.0]
+  mdp..rewards.continuous_error:
+    values:
+      - 0.0
+      - -0.5
+  mdp..rewards.discrete_error:
+    values:
+      - 0.0
+      - -0.5
 
 command:
   - ${env}

@@ -36,7 +36,7 @@ class MdpDatasetBuilder:
             elif name == 'continuous':
                 weight: float = value
                 rewards[ds.log_ground_truth] += (
-                        ds.log_continuous_ratings[ds.log_ground_truth] * weight
+                    ds.log_continuous_ratings[ds.log_ground_truth] * weight
                 )
             elif name == 'discrete':
                 weights = np.array(value)
@@ -45,18 +45,12 @@ class MdpDatasetBuilder:
                 ]
             elif name == 'continuous_error':
                 weight: float = value
-                err = np.abs(
-                    ds.log_continuous_ratings[~ds.log_ground_truth]
-                    - ds.log[~ds.log_ground_truth]['gt_continuous_rating']
-                )
-                rewards[~ds.log_ground_truth] -= err * weight
+                err = np.abs(ds.log_continuous_ratings - ds.log['gt_continuous_rating'])
+                rewards[~ds.log_ground_truth] += err[~ds.log_ground_truth] * weight
             elif name == 'discrete_error':
                 weight: float = value
-                err = np.abs(
-                    ds.log_discrete_ratings[~ds.log_ground_truth]
-                    - ds.log[~ds.log_ground_truth]['gt_discrete_rating']
-                )
-                rewards[~ds.log_ground_truth] -= err * weight
+                err = np.abs(ds.log_discrete_ratings - ds.log['gt_discrete_rating'])
+                rewards[~ds.log_ground_truth] += err[~ds.log_ground_truth] * weight
         return rewards
 
     def _get_actions(self, ds):

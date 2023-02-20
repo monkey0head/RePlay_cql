@@ -73,8 +73,7 @@ class ToyRatingsExperiment:
 
         mdp_builder = MdpDatasetBuilder(**mdp)
         self.test_mdp = mdp_builder.build(full_dataset)
-        self.train_mdp = mdp_builder.build(
-            ToyRatingsDataset(
+        self.train_mdp = mdp_builder.build(ToyRatingsDataset(
             log=train_log,
             user_embeddings=train_dataset.user_embeddings,
             item_embeddings=train_dataset.item_embeddings,
