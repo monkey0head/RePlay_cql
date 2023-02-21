@@ -40,7 +40,7 @@ class MdpDatasetBuilder:
                 )
             elif name == 'discrete':
                 weights = np.array(value)
-                rewards[ds.log_ground_truth] = weights[
+                rewards[ds.log_ground_truth] += weights[
                     ds.log_discrete_ratings[ds.log_ground_truth]
                 ]
             elif name == 'continuous_error':
