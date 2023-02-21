@@ -33,8 +33,9 @@ dataset:
     metric: l1
     positive_ratio: 0.1
 
-augmentations:
+negative_samples:
   n_pairs: 0.0
+  negate: continuous
 
 train_test_split:
   split_by: user
@@ -44,9 +45,9 @@ mdp:
   actions: continuous
   rewards:
     baseline: [0.0, 0.0]
-    continuous: 0.5
+    continuous: 0.0
     discrete: [0.5, 0.5]
-    continuous_error: -0.5
+    continuous_error: 0.0
     discrete_error: -0.5
 
 model:
@@ -58,6 +59,40 @@ model:
 eval_schedule: 10
 
 models:
+  cql:
+    _type_: d3rlpy.cql
+    _base_: default
+    actor_learning_rate: 1e-3
+    critic_learning_rate: 3e-3
+    temp_learning_rate: 1e-4
+    alpha_learning_rate: 1e-4
+    alpha_threshold: 10.0
+    conservative_weight: 5.0
+    initial_temperature: 1.0
+    initial_alpha: 1.0
+    n_action_samples: 10
+    soft_q_backup: False
+  bc:
+    _type_: d3rlpy.bc
+    _base_: default
+    learning_rate: 5e-4
+  sac:
+    _type_: d3rlpy.sac
+    _base_: default
+  ddpg:
+    _type_: d3rlpy.ddpg
+    _base_: default
+    temp_learning_rate: 1e-4
+    initial_temperature: 1.0
+  discrete_cql:
+    _type_: d3rlpy.discrete_cql
+    _base_: default
+  sdac:
+    _type_: d3rlpy.sdac
+    _base_: default
+  discrete_sac:
+    _type_: d3rlpy.discrete_sac
+    _base_: default
   default:
     actor_learning_rate: 1e-4
     critic_learning_rate: 3e-4
@@ -76,37 +111,6 @@ models:
     conservative_weight: 5.0 # ?
     n_action_samples: 10  #?
     soft_q_backup: False  #?
-  cql:
-    _type_: d3rlpy.cql
-    _base_: default
-    actor_learning_rate: 1e-3
-    critic_learning_rate: 3e-3
-    temp_learning_rate: 1e-4
-    alpha_learning_rate: 1e-4
-    alpha_threshold: 10.0
-    conservative_weight: 5.0
-    initial_temperature: 1.0
-    initial_alpha: 1.0
-    n_action_samples: 10
-    soft_q_backup: False
-  sac:
-    _type_: d3rlpy.sac
-    _base_: default
-  ddpg:
-    _type_: d3rlpy.ddpg
-    _base_: default
-    temp_learning_rate: 1e-4
-    initial_temperature: 1.0
-  discrete_cql:
-    _type_: d3rlpy.discrete_cql
-    _base_: default
-  sdac:
-    _type_: d3rlpy.sdac
-    _base_: default
-  discrete_sac:
-    _type_: d3rlpy.discrete_sac
-    _base_: default
-
 
 embeddings:
   random:

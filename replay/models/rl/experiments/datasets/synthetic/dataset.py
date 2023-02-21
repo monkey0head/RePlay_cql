@@ -75,19 +75,36 @@ class ToyRatingsDatasetBuilder:
         dataset.log['ground_truth'] = True
         return dataset
 
-    def generate_augmentations(self, n_pairs: int | float) -> ToyRatingsDataset:
+    def generate_negative_samples(
+            self, n_pairs: int | float, negate: str
+    ) -> ToyRatingsDataset:
         dataset = ToyRatingsDataset(
             self.source.generate(n_pairs=n_pairs, duplicates=True),
             user_embeddings=self.user_embeddings, item_embeddings=self.item_embeddings
         )
-        continuous_ratings, discrete_ratings = self.relevance.calculate(
+        gt_continuous_ratings, gt_discrete_ratings = self.relevance.calculate(
             dataset.log_user_embeddings, dataset.log_item_embeddings
         )
-        rand_order = self.rng.permutation(continuous_ratings.shape[0])
-        dataset.log['continuous_rating'] = continuous_ratings[rand_order]
-        dataset.log['discrete_rating'] = discrete_ratings[rand_order]
-        dataset.log['gt_continuous_rating'] = continuous_ratings
-        dataset.log['gt_discrete_rating'] = discrete_ratings
+        if negate == 'continuous':
+            continuous_ratings = self.rng.uniform(size=gt_continuous_ratings.shape[0])
+            discrete_ratings = self.relevance.discretize(continuous_ratings)
+        elif negate == 'discrete':
+            discrete_ratings = 1 - gt_discrete_ratings
+            # sample continuous rating from the corresponding relevance range
+            # precursors: just random values in [0,1]
+            continuous_ratings = self.rng.uniform(size=gt_continuous_ratings.shape[0])
+            # for irrelevant: [0, 1] -> [0, \theta]
+            continuous_ratings[discrete_ratings == 0] *= self.relevance.relevant_threshold
+            # for relevant: [0, 1] -> [0, 1 - \theta] -> [\theta, 1]
+            continuous_ratings[discrete_ratings == 1] *= 1 - self.relevance.relevant_threshold
+            continuous_ratings[discrete_ratings == 1] += self.relevance.relevant_threshold
+        else:
+            raise ValueError(f'Parameter `negate` has unsupported value {negate}')
+
+        dataset.log['continuous_rating'] = continuous_ratings
+        dataset.log['discrete_rating'] = discrete_ratings
+        dataset.log['gt_continuous_rating'] = gt_continuous_ratings
+        dataset.log['gt_discrete_rating'] = gt_discrete_ratings
         dataset.log['ground_truth'] = False
         return dataset
 

@@ -33,8 +33,10 @@ class RelevanceCalculator:
             self.relevant_threshold = np.quantile(
                 similarity, 1 - self.positive_ratio, interpolation='lower'
             )
-        relevant = similarity >= self.relevant_threshold
 
         continuous_relevance = similarity
-        discrete_relevance = relevant.astype(int)
+        discrete_relevance = self.discretize(similarity).astype(int)
         return continuous_relevance, discrete_relevance
+
+    def discretize(self, similarity: np.ndarray) -> np.ndarray:
+        return (similarity >= self.relevant_threshold).astype(int)

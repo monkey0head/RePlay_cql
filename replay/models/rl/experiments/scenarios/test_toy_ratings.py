@@ -41,7 +41,7 @@ class ToyRatingsExperiment:
     def __init__(
             self, config: TConfig, config_path: Path, seed: int,
             top_k: int, epochs: int, dataset: TConfig, mdp: TConfig, model: TConfig,
-            train_test_split: TConfig, augmentations: TConfig,
+            train_test_split: TConfig, negative_samples: TConfig,
             log: bool, eval_schedule: int,
             cuda_device: bool | int | None,
             project: str = None,
@@ -63,8 +63,8 @@ class ToyRatingsExperiment:
         self.dataset_generator = self.config.resolve_object(dataset)
         full_dataset = self.dataset_generator.generate()
         train_dataset = self.dataset_generator.split(full_dataset, **train_test_split)
-        augmentations = self.dataset_generator.generate_augmentations(**augmentations)
-        train_log = pd.concat([train_dataset.log, augmentations.log], ignore_index=True)
+        negative_samples = self.dataset_generator.generate_negative_samples(**negative_samples)
+        train_log = pd.concat([train_dataset.log, negative_samples.log], ignore_index=True)
         train_log.sort_values(
             ['user_id', 'timestamp'],
             inplace=True,
@@ -152,6 +152,9 @@ class TypesResolver(LazyTypeResolver):
         if type_name == 'd3rlpy.discrete_sac':
             from d3rlpy.algos import DiscreteSAC
             return DiscreteSAC
+        if type_name == 'd3rlpy.bc':
+            from d3rlpy.algos.bc import BC
+            return BC
         raise ValueError(f'Unknown type: {type_name}')
 
 
