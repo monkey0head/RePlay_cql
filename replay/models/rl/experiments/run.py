@@ -4,10 +4,7 @@ from replay.models.rl.experiments.utils.config import LazyTypeResolver
 
 class RunnerRegistry(LazyTypeResolver):
     def resolve(self, name: str):
-        if name == 'test.pipeline':
-            from replay.models.rl.experiments.scenarios.test_pipeline import TestPipelineExperiment
-            return TestPipelineExperiment
-        elif name == 'test.toy_ratings':
+        if name == 'test.toy_ratings':
             from replay.models.rl.experiments.scenarios.test_toy_ratings import ToyRatingsExperiment
             return ToyRatingsExperiment
 
