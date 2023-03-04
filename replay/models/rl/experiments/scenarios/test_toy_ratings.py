@@ -6,6 +6,9 @@ from typing import TYPE_CHECKING
 
 import numpy as np
 import pandas as pd
+from d3rlpy.algos import AlgoBase
+from d3rlpy.dataset import MDPDataset
+
 from replay.models.rl.experiments.datasets.synthetic.dataset import (
     ToyRatingsDataset,
     ToyRatingsDatasetBuilder
@@ -72,12 +75,12 @@ class ToyRatingsExperiment:
         )
 
         mdp_builder = MdpDatasetBuilder(**mdp)
-        self.test_mdp = mdp_builder.build(full_dataset)
+        self.test_mdp = mdp_builder.build(full_dataset, use_ground_truth=True)
         self.train_mdp = mdp_builder.build(ToyRatingsDataset(
             log=train_log,
             user_embeddings=train_dataset.user_embeddings,
             item_embeddings=train_dataset.item_embeddings,
-        ))
+        ), use_ground_truth=False)
         self.model = self.config.resolve_object(
             model | dict(use_gpu=get_cuda_device(cuda_device))
         )
@@ -99,19 +102,32 @@ class ToyRatingsExperiment:
         self.print_with_timestamp('<==')
 
     def _eval_and_log(self, model, epoch):
+        metrics = self._eval_mae(model, self.test_mdp)
+
+        mae, discrete_mae = metrics['mae'], metrics['discrete_mae']
+        self.print_with_timestamp(
+            f'Epoch {epoch:03}: mae {mae:.4f} | dmae {discrete_mae:.4f}'
+        )
+        if self.logger:
+            metrics |= dict(epoch=epoch)
+            self.logger.log(metrics)
+
+    def _eval_mae(self, model: AlgoBase, dataset: MDPDataset):
         batch_size = model.batch_size
-        n_splits = self.test_mdp.observations.shape[0] // batch_size
+        n_splits = dataset.observations.shape[0] // batch_size
         test_prediction = np.concatenate([
             model.predict(batch)
-            for batch in np.array_split(self.test_mdp.observations, n_splits)
+            for batch in np.array_split(dataset.observations, n_splits)
         ])
-        test_loss = np.mean(np.abs(test_prediction - self.test_mdp.actions))
-        self.print_with_timestamp(f'Epoch {epoch}: test loss = {test_loss:.4f}')
-        if self.logger:
-            self.logger.log({
-                'epoch': epoch,
-                'mae': test_loss,
-            })
+        mae = np.mean(np.abs(test_prediction - dataset.actions))
+
+        discrete_predictions = self.dataset_generator.relevance.discretize(test_prediction)
+        discrete_gt = self.dataset_generator.relevance.discretize(dataset.actions)
+        discrete_mae = np.mean(np.abs(discrete_predictions - discrete_gt))
+        return {
+            'mae': mae,
+            'discrete_mae': discrete_mae,
+        }
 
     def print_with_timestamp(self, text: str):
         print_with_timestamp(text, self.init_time)
