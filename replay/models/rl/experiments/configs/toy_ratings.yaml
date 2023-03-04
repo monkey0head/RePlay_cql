@@ -39,14 +39,14 @@ negative_samples:
 
 train_test_split:
   split_by: user
-  train: 0.25
+  train: 1.0
 
 mdp:
   actions: continuous
   rewards:
     baseline: [0.0, 0.0]
     continuous: 0.0
-    discrete: [0.5, 0.0]
+    discrete: [0.5, 0.5]
     continuous_error: 0.0
     discrete_error: -0.5
 
