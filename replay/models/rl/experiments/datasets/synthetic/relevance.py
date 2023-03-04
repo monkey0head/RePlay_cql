@@ -35,7 +35,7 @@ class RelevanceCalculator:
             )
 
         continuous_relevance = similarity
-        discrete_relevance = self.discretize(similarity).astype(int)
+        discrete_relevance = self.discretize(similarity)
         return continuous_relevance, discrete_relevance
 
     def discretize(self, similarity: np.ndarray) -> np.ndarray:

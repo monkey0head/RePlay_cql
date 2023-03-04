@@ -32,6 +32,14 @@ class ToyRatingsDataset:
         return self.log['discrete_rating']
 
     @property
+    def log_gt_continuous_ratings(self):
+        return self.log['gt_continuous_rating']
+
+    @property
+    def log_gt_discrete_ratings(self):
+        return self.log['gt_discrete_rating']
+
+    @property
     def log_ground_truth(self):
         return self.log['ground_truth']
 

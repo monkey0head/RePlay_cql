@@ -14,9 +14,10 @@ class MdpDatasetBuilder:
         self.actions = actions
         self.rewards = rewards
 
-    def build(self, ds: ToyRatingsDataset) -> MDPDataset:
+    def build(self, ds: ToyRatingsDataset, use_ground_truth: bool = False) -> MDPDataset:
         observations = np.concatenate((ds.log_user_embeddings, ds.log_item_embeddings), axis=-1)
-        actions = self._get_actions(ds)
+        # FIXME: it's dangerous, better to pass already correct dataset
+        actions = self._get_actions(ds, use_ground_truth=use_ground_truth)
         rewards = self._get_rewards(ds)
         terminals = self._get_terminals(ds)
 
@@ -53,11 +54,17 @@ class MdpDatasetBuilder:
                 rewards[~ds.log_ground_truth] += err[~ds.log_ground_truth] * weight
         return rewards
 
-    def _get_actions(self, ds):
+    def _get_actions(self, ds, use_ground_truth: bool):
         if self.actions == 'continuous':
-            return ds.log_continuous_ratings.values
+            if use_ground_truth:
+                return ds.log_gt_continuous_ratings
+            else:
+                return ds.log_continuous_ratings.values
         elif self.actions == 'discrete':
-            return ds.log_discrete_ratings.values
+            if use_ground_truth:
+                return ds.log_gt_discrete_ratings
+            else:
+                return ds.log_discrete_ratings.values
         else:
             raise ValueError(f'Unknown actions type: {self.actions}')
 
