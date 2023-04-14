@@ -30,7 +30,7 @@ if TYPE_CHECKING:
     from wandb.sdk.wandb_run import Run
 
 
-class ToyRatingsExperiment:
+class BanditsRatingsExperiment:
     config: GlobalConfig
     logger: Run | None
 
