@@ -20,20 +20,20 @@ if TYPE_CHECKING:
     from d3rlpy.dataset import MDPDataset
 
 
-def boosting(relative_value: float | np.ndarray, k: float, softness: float = 3.0) -> float:
+def boosting(relative_value: float | np.ndarray, k: float, softness: float = 1.5) -> float:
     # relative value: value / target value  \in [0, +inf)
-    # x = log(relative_rate)
-    #   0 1 +inf  -> -inf 0 +inf
-    x = np.log(relative_value)
+    # x = -log(relative_rate)
+    #   0 1 +inf  -> +inf 0 -inf
+    x = -np.log(relative_value)
     # zero k means "no boosting", that's why we use shifted value.
     K = k + 1
 
     # relative_rate -> x -> B:
-    #   0 -> -inf -> K^tanh(-inf) = K^(-1) = 1 / K
+    #   0 -> +inf -> K^tanh(+inf) = K^1 = K
     #   1 -> 0 -> K^tanh(0) = K^0 = 1
-    #   +inf -> -inf -> K^tanh(+inf) = K^1 = K
+    #   +inf -> -inf -> K^tanh(-inf) = K^(-1) = 1 / K
     # higher softness just makes the sigmoid curve smoother; default value is empirically optimized
-    return np.power(k + 1, np.tanh(x / softness))
+    return np.power(K, np.tanh(x / softness))
 
 
 class Embeddings:
@@ -69,22 +69,41 @@ class UserState:
     # changes with reset
     satiation_speed: np.ndarray
 
-    relevance_boosting_k: float = 0.25
-    metric: str = 'l2'
+    relevance_boosting_k: tuple[float, float]
+    metric: str
     embeddings: Embeddings
 
     def __init__(
             self, user_id: int, embeddings: Embeddings,
-            base_learning_speed: float, rng: Generator
+            base_satiation: float,
+            base_satiation_speed: float | tuple[float, float],
+            similarity_metric: str,
+            relevance_boosting: tuple[float, float],
+            boosting_softness: tuple[float, float],
+            rng: Generator
     ):
         self.user_id = user_id
         self.tastes = embeddings.users[user_id]
         self.rng = np.random.default_rng(rng.integers(100_000_000))
 
-        self.satiation = self.rng.uniform(size=embeddings.n_item_clusters)
-        self.satiation_speed = np.clip(self.rng.normal(
-            loc=base_learning_speed, scale=2 * base_learning_speed, size=embeddings.n_item_clusters
-        ), 0., 1.0)
+        n_clusters = embeddings.n_item_clusters
+        self.satiation = base_satiation + self.rng.uniform(size=n_clusters)
+
+        if isinstance(base_satiation_speed, float):
+            self.satiation_speed = np.full(embeddings.n_item_clusters, base_satiation_speed)
+        else:
+            # tuple[float, float]
+            base_satiation_speed, k = base_satiation_speed
+            k = 1.0 + k
+            min_speed, max_speed = 1/k * base_satiation_speed, k * base_satiation_speed
+            self.satiation_speed = np.clip(
+                self.rng.uniform(min_speed, max_speed, n_clusters),
+                0., 1.0
+            )
+
+        self.relevance_boosting_k = tuple(relevance_boosting)
+        self.boosting_softness = tuple(boosting_softness)
+        self.metric = similarity_metric
         self.embeddings = embeddings
 
     def step(self, item_id: int) -> float:
@@ -95,19 +114,29 @@ class UserState:
         item_to_cluster_relevance /= item_to_cluster_relevance.sum(-1)
 
         # 2) increase satiation via similarity and speed
-        self.satiation += item_to_cluster_relevance * self.satiation_speed
+        self.satiation *= 1.0 + item_to_cluster_relevance * self.satiation_speed
 
         # 3) get item similarity to user preferences and compute boosting
         #       from the aggregate weighted cluster satiation
         base_item_to_user_relevance = similarity(self.tastes, item_embedding, metric=self.metric)
         aggregate_item_satiation = np.sum(self.satiation * item_to_cluster_relevance)
-        relevance_boosting = boosting(aggregate_item_satiation, k=self.relevance_boosting_k)
+
+        boosting_k = self.relevance_boosting_k[aggregate_item_satiation > 1.0]
+        boosting_softness = self.boosting_softness[aggregate_item_satiation > 1.0]
+        relevance_boosting = boosting(
+            aggregate_item_satiation, k=boosting_k, softness=boosting_softness
+        )
 
         # 4) compute continuous and discrete relevance as user feedback
         relevance = base_item_to_user_relevance * relevance_boosting
 
-        return relevance
+        print(
+            f'AggSat {aggregate_item_satiation:.2f} '
+            f'| RB {relevance_boosting:.2f} '
+            f'| Rel {relevance:.3f}'
+        )
 
+        return relevance
 
 
 class NextItemEnvironment:
@@ -116,14 +145,18 @@ class NextItemEnvironment:
 
     embeddings: Embeddings
 
+    max_episode_len: tuple[int, int]
+    timestep: int
     state: UserState
     states: list[UserState]
+    current_max_episode_len: int
 
     def __init__(
             self, global_config: GlobalConfig, seed: int,
             n_users: int, n_items: int,
             embeddings: TConfig,
-            max_episode_len: int
+            max_episode_len: int | tuple[int, int],
+            user_state: TConfig,
     ):
         self.global_config = global_config
         self.rng = np.random.default_rng(seed)
@@ -135,22 +168,40 @@ class NextItemEnvironment:
             object_type_or_factory=Embeddings
         )
         self.states = [
-            UserState(
-                user_id, embeddings=self.embeddings,
-                base_learning_speed=0.1, rng=self.rng
-            )
+            UserState(user_id, embeddings=self.embeddings, rng=self.rng, **user_state)
             for user_id in range(self.n_users)
         ]
+        if isinstance(max_episode_len, int):
+            self.max_episode_len = (max_episode_len, max_episode_len)
+        else:
+            # tuple[int, int]: (avg_len, delta)
+            self.max_episode_len = (
+                max_episode_len[0] - max_episode_len[1],
+                max_episode_len[0] + max_episode_len[1]
+            )
+        self.timestep = 0
 
     def reset(self, user_id: int = None) -> float:
         if user_id is None:
             user_id = self.rng.integers(self.n_users)
 
         self.state = self.states[user_id]
+        self.timestep = 0
+        self.current_max_episode_len = self.rng.integers(*self.max_episode_len)
+
+        print(f'Sat: {self.state.satiation}')
+        print(f'SSp: {self.state.satiation_speed}')
         return 0.
 
-    def step(self, item_id: int) -> float:
-        return 1.0
+    def step(self, item_id: int):
+        relevance = self.state.step(item_id)
+        self.timestep += 1
+
+        terminated = self.timestep >= self.current_max_episode_len
+        if terminated:
+            print(f'Sat: {self.state.satiation}')
+            print(f'SSp: {self.state.satiation_speed}')
+        return relevance, terminated
 
 
 class MdpNextItemExperiment:
@@ -217,9 +268,19 @@ class MdpNextItemExperiment:
 
         self.print_with_timestamp('==> Run')
         env = self.env
+        rng = np.random.default_rng()
 
+        cum_return = 0.
         _ = env.reset()
-        env.step(0)
+        while True:
+            print(f'[{env.timestep}]')
+            relevance, terminated = env.step(3)
+            cum_return += relevance
+            # print(f'[{env.timestep}] {relevance:.2f}')
+            if terminated:
+                break
+
+        print(f'Steps: {env.timestep} | CumRel: {cum_return}')
         # fitter = self.model.fitter(
         #     self.train_mdp,
         #     n_epochs=self.epochs, verbose=False,

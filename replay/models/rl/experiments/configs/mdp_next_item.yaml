@@ -14,13 +14,19 @@ epochs: 200
 env:
   global_config: ???
   seed: ???
-  n_users: 10
-  n_items: 10
-  max_episode_len: 50
+  n_users: 100
+  n_items: 100
+  max_episode_len: [40, 20]
   embeddings:
     n_dims: 5
     users: embeddings.clusters
     items: embeddings.clusters
+  user_state:
+    base_satiation: 0.15
+    base_satiation_speed: [0.2, .4]
+    similarity_metric: l2
+    relevance_boosting: [0.2, 4.0]
+    boosting_softness: [2.0, 2.0]
 
 dataset:
   _type_: dataset.mdp_next_item
