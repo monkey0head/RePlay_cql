@@ -11,6 +11,17 @@ cuda_device: ...
 top_k: 10
 epochs: 200
 
+env:
+  global_config: ???
+  seed: ???
+  n_users: 10
+  n_items: 10
+  max_episode_len: 50
+  embeddings:
+    n_dims: 5
+    users: embeddings.clusters
+    items: embeddings.clusters
+
 dataset:
   _type_: dataset.mdp_next_item
   global_config: ???

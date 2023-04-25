@@ -26,9 +26,9 @@ def generate_clusters(
         return centers
 
     samples = []
-    for center, n_samples in zip(centers, n_clusters):
-        cluster_samples = _generate_distant_samples(
-            rng, n_samples, n_dims,
+    for center, n_sub_centers in zip(centers, n_clusters):
+        clustered_sub_clusters = _generate_distant_samples(
+            rng, n_sub_centers, n_dims,
             n_dissimilar_dims_required=n_dissimilar_dims_required,
             min_dim_delta=min_dim_delta / 2,
             min_l2_dist=min_l2_dist / 2,
@@ -36,7 +36,7 @@ def generate_clusters(
             center=center,
             max_tries=max_tries
         )
-        samples.extend(cluster_samples)
+        samples.extend(clustered_sub_clusters)
     # samples around center may be out of [0, 1] range, clip them
     samples = np.clip(0, 1, np.array(samples))
 

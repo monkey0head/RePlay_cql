@@ -13,10 +13,14 @@ class RandomEmbeddingsGenerator:
     def __init__(self, seed: int, n_dims: int):
         self.rng = np.random.default_rng(seed)
         self.n_dims = n_dims
+        self.n_clusters = 1
+        self.clusters = np.full(n_dims, 0.5)
 
     def generate(self, n: int = None) -> np.ndarray:
         shape = (n, self.n_dims) if n is not None else (self.n_dims,)
-        return self.rng.uniform(size=shape)
+        self.n_clusters = n
+        self.clusters = self.rng.uniform(size=shape)
+        return self.clusters
 
 
 class RandomClustersEmbeddingsGenerator:
@@ -44,6 +48,7 @@ class RandomClustersEmbeddingsGenerator:
             min_l2_dist=min_l2_dist,
             max_tries=max_generation_tries,
         )
+        self.n_clusters = len(self.clusters)
 
     def generate(self, n: int = None) -> np.ndarray:
         if n is None:
@@ -55,4 +60,4 @@ class RandomClustersEmbeddingsGenerator:
         embedding = self.rng.normal(
             loc=cluster, scale=self.intra_cluster_noise_scale, size=(self.n_dims,)
         )
-        return np.clip(0, 1, embedding)
+        return np.clip(embedding, 0.0, 1.0)
