@@ -8,8 +8,15 @@ log: True
 seed: 42
 cuda_device: ...
 
-top_k: 10
-epochs: 200
+generation:
+  epochs: 5
+  episodes_per_epoch: 20
+  samples_per_epoch: 10000
+
+learning:
+  epochs: 10
+  eval_schedule: 10
+  eval_episodes: 20
 
 env:
   global_config: ???
@@ -28,36 +35,6 @@ env:
     relevance_boosting: [0.2, 4.0]
     boosting_softness: [2.0, 2.0]
 
-dataset:
-  _type_: dataset.mdp_next_item
-  global_config: ???
-  seed: ???
-  source:
-    _type_: ds_source.random
-    seed: ???
-    n_users: 20
-    n_items: 40
-    n_pairs: 0.5
-    duplicates: False
-
-  embeddings_n_dims: 5
-  user_embeddings:
-    _base_: embeddings.clusters
-  item_embeddings:
-    _base_: embeddings.clusters
-
-  ratings:
-    metric: l1
-    positive_ratio: 0.1
-
-negative_samples:
-  n_pairs: 0.0
-  negate: discrete
-
-train_test_split:
-  split_by: user
-  train: 1.0
-
 mdp:
   actions: continuous
   rewards:
@@ -68,14 +45,15 @@ mdp:
     discrete_error: -0.5
 
 model:
-  _base_: models.cql
-  actor_learning_rate: 1e-3
-  critic_learning_rate: 3e-3
+  _base_: models.random
   batch_size: 32
 
-eval_schedule: 10
-
 models:
+  random:
+    _type_: model.random
+    seed: ???
+    n_actions: ???
+    batch_size: ???
   cql:
     _type_: d3rlpy.cql
     _base_: default

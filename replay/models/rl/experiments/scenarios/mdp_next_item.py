@@ -1,13 +1,17 @@
 from __future__ import annotations
 
 import logging
+from itertools import count
 from pathlib import Path
 from typing import TYPE_CHECKING
 
 import numpy as np
+import pandas as pd
 from numpy.random import Generator
 
+from replay.models.rl.experiments.datasets.synthetic.dataset import ToyRatingsDataset
 from replay.models.rl.experiments.datasets.synthetic.relevance import similarity
+from replay.models.rl.experiments.mdp.ratings import MdpDatasetBuilder
 from replay.models.rl.experiments.run.wandb import get_logger
 from replay.models.rl.experiments.utils.config import (
     TConfig, GlobalConfig, LazyTypeResolver
@@ -34,6 +38,35 @@ def boosting(relative_value: float | np.ndarray, k: float, softness: float = 1.5
     #   +inf -> -inf -> K^tanh(-inf) = K^(-1) = 1 / K
     # higher softness just makes the sigmoid curve smoother; default value is empirically optimized
     return np.power(K, np.tanh(x / softness))
+
+
+class MdpNextItemGenerationConfig:
+    epochs: int
+
+    episodes_per_epoch: int | None
+    samples_per_epoch: int | None
+
+    def __init__(
+            self,
+            epochs: int,
+            episodes_per_epoch: int | None = None,
+            samples_per_epoch: int | None = None,
+    ):
+        self.epochs = epochs
+        assert episodes_per_epoch is not None or samples_per_epoch is not None
+        self.episodes_per_epoch = episodes_per_epoch
+        self.samples_per_epoch = samples_per_epoch
+
+
+class MdpNextItemLearningConfig:
+    epochs: int
+    eval_schedule: int
+    eval_episodes: int
+
+    def __init__(self, epochs: int, eval_schedule: int = 1, eval_episodes: int = 1):
+        self.epochs = epochs
+        self.eval_schedule = eval_schedule
+        self.eval_episodes = eval_episodes
 
 
 class Embeddings:
@@ -106,7 +139,7 @@ class UserState:
         self.metric = similarity_metric
         self.embeddings = embeddings
 
-    def step(self, item_id: int) -> float:
+    def step(self, item_id: int):
         # 1) find similarity between item embedding and item clusters
         item_embedding = self.embeddings.items[item_id]
         clusters = self.embeddings.item_clusters
@@ -129,14 +162,17 @@ class UserState:
 
         # 4) compute continuous and discrete relevance as user feedback
         relevance = base_item_to_user_relevance * relevance_boosting
+        if relevance < 0.5:
+            discrete_relevance = self.rng.binomial(1, p=1-relevance)
+        else:
+            discrete_relevance = 0
 
-        print(
-            f'AggSat {aggregate_item_satiation:.2f} '
-            f'| RB {relevance_boosting:.2f} '
-            f'| Rel {relevance:.3f}'
-        )
-
-        return relevance
+        # print(
+        #     f'AggSat {aggregate_item_satiation:.2f} '
+        #     f'| RB {relevance_boosting:.2f} '
+        #     f'| Rel {relevance:.3f}'
+        # )
+        return relevance, discrete_relevance
 
 
 class NextItemEnvironment:
@@ -181,7 +217,7 @@ class NextItemEnvironment:
             )
         self.timestep = 0
 
-    def reset(self, user_id: int = None) -> float:
+    def reset(self, user_id: int = None):
         if user_id is None:
             user_id = self.rng.integers(self.n_users)
 
@@ -189,18 +225,18 @@ class NextItemEnvironment:
         self.timestep = 0
         self.current_max_episode_len = self.rng.integers(*self.max_episode_len)
 
-        print(f'Sat: {self.state.satiation}')
-        print(f'SSp: {self.state.satiation_speed}')
-        return 0.
+        # print(f'Sat: {self.state.satiation}')
+        # print(f'SSp: {self.state.satiation_speed}')
+        return self.state.user_id
 
     def step(self, item_id: int):
         relevance = self.state.step(item_id)
         self.timestep += 1
 
         terminated = self.timestep >= self.current_max_episode_len
-        if terminated:
-            print(f'Sat: {self.state.satiation}')
-            print(f'SSp: {self.state.satiation_speed}')
+        # if terminated:
+        #     print(f'Sat: {self.state.satiation}')
+        #     print(f'SSp: {self.state.satiation_speed}')
         return relevance, terminated
 
 
@@ -211,17 +247,16 @@ class MdpNextItemExperiment:
     init_time: float
     seed: int
 
-    top_k: int
-    epochs: int
-    eval_schedule: int
+    generation_config: MdpNextItemGenerationConfig
+    learning_config: MdpNextItemLearningConfig
+
 
     def __init__(
             self, config: TConfig, config_path: Path, seed: int,
-            top_k: int, epochs: int, dataset: TConfig, mdp: TConfig, model: TConfig,
-            train_test_split: TConfig, negative_samples: TConfig,
+            generation: TConfig, learning: TConfig,
+            mdp: TConfig, model: TConfig,
             env: TConfig,
-            log: bool, eval_schedule: int,
-            cuda_device: bool | int | None,
+            log: bool, cuda_device: bool | int | None,
             project: str = None,
             **_
     ):
@@ -234,90 +269,107 @@ class MdpNextItemExperiment:
         self.print_with_timestamp('==> Init')
 
         self.seed = seed
-        self.top_k = top_k
-        self.epochs = epochs
-        self.eval_schedule = eval_schedule
+        self.generation_config = MdpNextItemGenerationConfig(**generation)
+        self.learning_config = MdpNextItemLearningConfig(**learning)
 
-        self.env = self.config.resolve_object(env, object_type_or_factory=NextItemEnvironment)
-
-        # self.dataset_generator = self.config.resolve_object(dataset)
-        # full_dataset = self.dataset_generator.generate()
-        # train_dataset = self.dataset_generator.split(full_dataset, **train_test_split)
-        # negative_samples = self.dataset_generator.generate_negative_samples(**negative_samples)
-        # train_log = pd.concat([train_dataset.log, negative_samples.log], ignore_index=True)
-        # train_log.sort_values(
-        #     ['user_id', 'timestamp'],
-        #     inplace=True,
-        #     ascending=[True, False]
-        # )
-        #
-        # mdp_builder = MdpDatasetBuilder(**mdp)
-        # self.test_mdp = mdp_builder.build(full_dataset, use_ground_truth=True)
-        # self.train_mdp = mdp_builder.build(ToyRatingsDataset(
-        #     log=train_log,
-        #     user_embeddings=train_dataset.user_embeddings,
-        #     item_embeddings=train_dataset.item_embeddings,
-        # ), use_ground_truth=False)
-        # self.model = self.config.resolve_object(
-        #     model | dict(use_gpu=get_cuda_device(cuda_device))
-        # )
+        self.env: NextItemEnvironment = self.config.resolve_object(
+            env, object_type_or_factory=NextItemEnvironment
+        )
+        self.mdp_builder = MdpDatasetBuilder(**mdp)
+        self.model = self.config.resolve_object(
+            model | dict(use_gpu=get_cuda_device(cuda_device)),
+            n_actions=self.env.n_items
+        )
 
     def run(self):
         logging.disable(logging.DEBUG)
         self.set_metrics()
 
         self.print_with_timestamp('==> Run')
-        env = self.env
-        rng = np.random.default_rng()
-
-        cum_return = 0.
-        _ = env.reset()
-        while True:
-            print(f'[{env.timestep}]')
-            relevance, terminated = env.step(3)
-            cum_return += relevance
-            # print(f'[{env.timestep}] {relevance:.2f}')
-            if terminated:
-                break
-
-        print(f'Steps: {env.timestep} | CumRel: {cum_return}')
-        # fitter = self.model.fitter(
-        #     self.train_mdp,
-        #     n_epochs=self.epochs, verbose=False,
-        #     save_metrics=False, show_progress=False,
-        # )
-        # for epoch, metrics in fitter:
-        #     if epoch == 1 or epoch % self.eval_schedule == 0:
-        #         self._eval_and_log(self.model, epoch)
+        total_epoch = 0
+        for generation_epoch in range(self.generation_config.epochs):
+            self.print_with_timestamp(f'Gen Epoch: {generation_epoch} ==>')
+            dataset = self._generate_dataset()
+            total_epoch += self._learn_on_dataset(total_epoch, dataset)
 
         self.print_with_timestamp('<==')
 
-    def _eval_and_log(self, model, epoch):
-        metrics = self._eval_mae(model, self.test_mdp)
+    def _generate_dataset(self):
+        config = self.generation_config
+        samples = []
+        for episode in count():
+            samples.extend(self._generate_episode())
 
-        mae, discrete_mae = metrics['mae'], metrics['discrete_mae']
+            if config.episodes_per_epoch is not None and episode >= config.episodes_per_epoch:
+                break
+            if config.samples_per_epoch is not None and len(samples) >= config.samples_per_epoch:
+                break
+
+        return samples
+
+    def _generate_episode(self):
+        env, model = self.env, self.model
+        user_id = env.reset()
+        trajectory = []
+        while True:
+            item_id = model.predict()
+            relevance, terminated = env.step(item_id)
+            continuous_relevance, discrete_relevance = relevance
+            trajectory.append((
+                user_id, item_id, continuous_relevance, discrete_relevance,
+                terminated
+            ))
+            if terminated:
+                break
+        return trajectory
+
+    def _learn_on_dataset(self, total_epoch: int, dataset: list[tuple]):
+        log = pd.DataFrame(dataset, columns=[
+            'user_id', 'item_id', 'continuous_rating', 'discrete_rating', 'terminal'
+        ])
+        dataset = ToyRatingsDataset(
+            log,
+            user_embeddings=self.env.embeddings.users,
+            item_embeddings=self.env.embeddings.items,
+        )
+        dataset.log['gt_continuous_rating'] = dataset.log['continuous_rating']
+        dataset.log['gt_discrete_rating'] = dataset.log['discrete_rating']
+        dataset.log['ground_truth'] = True
+        mdp_dataset = self.mdp_builder.build(dataset, use_ground_truth=True)
+
+        config = self.learning_config
+        fitter = self.model.fitter(
+            dataset=mdp_dataset,
+            n_epochs=config.epochs, verbose=False,
+            save_metrics=False, show_progress=False,
+        )
+        for epoch, metrics in fitter:
+            if epoch == 1 or epoch % config.eval_schedule == 0:
+                self._eval_and_log(total_epoch)
+            total_epoch += 1
+        return total_epoch
+
+    def _eval_and_log(self, epoch):
+        metrics = self._eval_returns()
+
         self.print_with_timestamp(
-            f'Epoch {epoch:03}: mae {mae:.4f} | dmae {discrete_mae:.4f}'
+            f'Epoch {epoch:03}: '
+            f'ContRet {metrics["continuous_return"]:.3f} '
+            f'| DiscRet {metrics["discrete_return"]:.3f}'
         )
         if self.logger:
             metrics |= dict(epoch=epoch)
             self.logger.log(metrics)
 
-    def _eval_mae(self, model: AlgoBase, dataset: MDPDataset):
-        batch_size = model.batch_size
-        n_splits = dataset.observations.shape[0] // batch_size
-        test_prediction = np.concatenate([
-            model.predict(batch)
-            for batch in np.array_split(dataset.observations, n_splits)
-        ])
-        mae = np.mean(np.abs(test_prediction - dataset.actions))
-
-        discrete_predictions = self.dataset_generator.relevance.discretize(test_prediction)
-        discrete_gt = self.dataset_generator.relevance.discretize(dataset.actions)
-        discrete_mae = np.mean(np.abs(discrete_predictions - discrete_gt))
+    def _eval_returns(self):
+        cont_returns, disc_returns = [], []
+        for ep in range(self.learning_config.eval_episodes):
+            trajectory = self._generate_episode()
+            cont_returns.append(np.sum([step[2] for step in trajectory]))
+            disc_returns.append(np.sum([step[3] for step in trajectory]))
         return {
-            'mae': mae,
-            'discrete_mae': discrete_mae,
+            'continuous_return': np.mean(cont_returns),
+            'discrete_return': np.mean(disc_returns),
         }
 
     def print_with_timestamp(self, text: str):
@@ -348,6 +400,9 @@ class TypesResolver(LazyTypeResolver):
             from replay.models.rl.experiments.datasets.synthetic.embeddings import \
                 RandomClustersEmbeddingsGenerator
             return RandomClustersEmbeddingsGenerator
+        if type_name == 'model.random':
+            from replay.models.rl.random_recommender import RandomRecommender
+            return RandomRecommender
         if type_name == 'd3rlpy.cql':
             from d3rlpy.algos import CQL
             return CQL
